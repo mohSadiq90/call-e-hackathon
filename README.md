@@ -3,7 +3,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CALL-E SDK](https://img.shields.io/badge/CALL--E-SDK%20Integrated-success)](https://github.com/CALLE-AI/server-sdk-python)
-[![Tests: Passing](https://img.shields.io/badge/Tests-12%2F12%20Passing-brightgreen.svg)]()
+[![Tests: Passing](https://img.shields.io/badge/Tests-15%2F15%20Passing-brightgreen.svg)]()
 
 > **Autonomous phone agent that dials suppliers to verify purchase order fulfillment by deadline, captures delay root causes, estimates financial risk, and outputs structured intelligence directly into procurement dashboards.**
 
@@ -189,6 +189,7 @@ OK
 ```
 call-e-hackathon/
 ├── README.md                      # Complete project documentation & pitch
+├── INSTRUCTIONS.md                # Hackathon guidelines, build specs & submission instructions
 ├── PROGRESS.md                    # Project work log and sprint tracker
 ├── pyproject.toml                 # Package configuration
 ├── requirements.txt               # Dependencies
@@ -200,12 +201,16 @@ call-e-hackathon/
 │   ├── __init__.py
 │   ├── supplier_agent_prompt.py   # 5-step conversation flow & system instructions
 │   └── system_instructions.md     # Markdown conversation tree reference
+├── skills/
+│   └── supply-chain-agent/
+│       └── SKILL.md               # Reusable Antigravity / AI Agent Skill manifest
 ├── src/
 │   ├── __init__.py
 │   ├── models.py                  # Pydantic schemas (PO, Supplier, CallResult)
 │   ├── calle_client.py            # CALL-E SDK client + High-fidelity simulator
 │   ├── transcript_parser.py       # Deterministic extraction of dates, costs, causes
-│   └── reporter.py                # CSV, JSON, and ASCII dashboard generator
+│   ├── reporter.py                # CSV, JSON, and ASCII dashboard generator
+│   └── mcp_server.py              # Model Context Protocol (MCP) tool server
 ├── data/
 │   ├── suppliers.json             # 5 realistic test supplier records & scenarios
 │   └── suppliers.csv              # CSV format for ERP batch ingestion
@@ -213,15 +218,27 @@ call-e-hackathon/
 │   ├── __init__.py
 │   ├── test_models.py             # Schema validation tests
 │   ├── test_parser.py             # Parsing & categorization tests
-│   └── test_agent.py              # End-to-end pipeline & reporting tests
+│   ├── test_agent.py              # End-to-end pipeline & reporting tests
+│   └── test_mcp.py                # MCP server protocol & tool tests
 └── main.py                        # CLI entry point
 ```
 
 ---
 
-## 🏆 Hackathon Submission Details
+## 🏆 Hackathon Submission Details & Checklist
 
 - **Event**: CALL-E Hackathon ("Your Code Is Calling" 2026)
 - **Target Track**: Real-World Enterprise Voice Agents / Supply Chain Automation
+- **Contribution Areas**: 
+  - `Agent Skills` ([`skills/supply-chain-agent/SKILL.md`](skills/supply-chain-agent/SKILL.md))
+  - `Workflow Plugins / Functional Applications` ([`src/mcp_server.py`](src/mcp_server.py) & [`main.py`](main.py))
 - **Community Submission**: Pull Request to [`CALLE-AI/awesome-phone-call-agents`](https://github.com/CALLE-AI/awesome-phone-call-agents)
+- **Devpost Submission Requirements**:
+  - Pull Request URL on `CALLE-AI/awesome-phone-call-agents`
+  - 3-minute public demonstration video on YouTube or Vimeo
+  - Email address associated with CALL-E account
+  - Link to open-source repository ([`mohSadiq90/call-e-hackathon`](https://github.com/mohSadiq90/call-e-hackathon))
+  - CALL-E Feedback Survey submission
 - **Author**: Mohammad Sadiq ([@mohSadiq90](https://github.com/mohSadiq90))
+- **Detailed Guide**: See [INSTRUCTIONS.md](INSTRUCTIONS.md) for step-by-step instructions.
+

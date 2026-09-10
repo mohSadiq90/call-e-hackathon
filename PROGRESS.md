@@ -56,9 +56,31 @@
   - `tests/test_models.py`, `tests/test_parser.py`, `tests/test_agent.py`
   - `main.py`
   - `PROGRESS.md`
+### [2026-09-10] - Phase 3 & Instructions Update: Official Hackathon Guidelines, Agent Skill, and MCP Server
+- **Features & Enhancements**:
+  - **Official Hackathon Instructions & Compliance Ingestion (`INSTRUCTIONS.md`)**:
+    - Documented complete onboarding guide: 5-minute CALL-E account setup (20 free calls), additional calls request protocol, and 5 integration modalities (SDK, API, MCP, CLI, SKILL).
+    - Established strict Devpost and public pull request submission criteria targeting `CALLE-AI/awesome-phone-call-agents`.
+    - Outlined detailed 3-minute demonstration video script (Problem -> Live Calls -> Dashboard -> Architecture).
+  - **Reusable Agent Skill Manifest (`skills/supply-chain-agent/SKILL.md`)**:
+    - Created standard Agent Skill specification allowing Antigravity and autonomous LLM agents to invoke CALL-E supply chain verification calls on demand.
+    - Documented skill trigger patterns, parameter bindings, and structured output schemas.
+  - **Model Context Protocol (MCP) Server (`src/mcp_server.py`)**:
+    - Implemented production JSON-RPC 2.0 stdio MCP server exposing `calle_check_supplier_status` and `calle_run_batch_procurement`.
+    - Integrated direct Pydantic data serialization and aggregated reporting output.
+  - **Automated Testing Suite Expansion (`tests/test_mcp.py`)**:
+    - Added unit test suite for MCP server protocol handling (`tools/list`, single supplier call execution, and batch procurement run).
+    - Expanded test suite from 12 to 15 passing tests (100% pass rate).
+- **Key Files Modified**:
+  - `INSTRUCTIONS.md` (new)
+  - `skills/supply-chain-agent/SKILL.md` (new)
+  - `src/mcp_server.py` (new)
+  - `tests/test_mcp.py` (new)
+  - `README.md`
+  - `PROGRESS.md`
 - **Current Status & Next Steps**:
-  - **Current Status**: Core agent architecture, prompt protocol, test suite, and CLI reporting engine fully implemented and passing 100% of tests.
+  - **Current Status**: All 5 integration modalities (SDK, API, MCP, CLI, SKILL) implemented and tested with 15/15 unit tests passing.
   - **Next Steps**:
-    1. Obtain user's CALL-E API key and agent credentials for live test dialing.
-    2. Record 3-minute demo video showing live/simulated calls and output CSV dashboard.
-    3. Prepare PR to `CALLE-AI/awesome-phone-call-agents`.
+    1. Sign in to CALL-E developer account, retrieve API keys and request additional calls via form.
+    2. Record 3-minute demonstration video highlighting live/simulated call flows and CSV/JSON output.
+    3. Open pull request against `CALLE-AI/awesome-phone-call-agents` and submit Devpost form.
