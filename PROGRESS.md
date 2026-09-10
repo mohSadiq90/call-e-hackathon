@@ -80,7 +80,26 @@
   - `PROGRESS.md`
 - **Current Status & Next Steps**:
   - **Current Status**: All 5 integration modalities (SDK, API, MCP, CLI, SKILL) implemented and tested with 15/15 unit tests passing.
+
+### [2026-09-10] - Phase 4: Upstream Repository Fork & Official Submission Pull Request
+- **Features & Enhancements**:
+  - **Forked Upstream Repository**:
+    - Forked `CALLE-AI/awesome-phone-call-agents` under `mohSadiq90/awesome-phone-call-agents` using GitHub CLI.
+  - **Branch & Skill Specification Package**:
+    - Created submission branch `feat/supply-chain-supplier-status-agent` adhering strictly to `docs/git-naming-conventions.md`.
+    - Implemented portable Agent Skill `skills/supply-chain-supplier-status/` containing `SKILL.md`, `references/safety.md`, and `references/examples.md`.
+    - Added catalog entries under Skills and Enterprise Apps in root `README.md`.
+  - **Strict Repository Validation**:
+    - Validated all additions using upstream `python3 scripts/validate_repository.py` — passed 100% with no violations.
+  - **Official Submission Pull Request Opened**:
+    - Published PR #440 to `CALLE-AI/awesome-phone-call-agents:main`:
+      - **PR URL**: [https://github.com/CALLE-AI/awesome-phone-call-agents/pull/440](https://github.com/CALLE-AI/awesome-phone-call-agents/pull/440)
+      - **Title**: `feat(skills): add supply-chain-supplier-status skill and enterprise application entry`
+- **Key Files Modified**:
+  - `INSTRUCTIONS.md` (recorded official PR submission link)
+  - `PROGRESS.md` (updated with Phase 4 deliverable completion)
+- **Current Status & Next Steps**:
+  - **Current Status**: Public submission Pull Request #440 is live and linked. Codebase is 100% tested (15/15 unit tests passing).
   - **Next Steps**:
-    1. Sign in to CALL-E developer account, retrieve API keys and request additional calls via form.
-    2. Record 3-minute demonstration video highlighting live/simulated call flows and CSV/JSON output.
-    3. Open pull request against `CALLE-AI/awesome-phone-call-agents` and submit Devpost form.
+    1. Record 3-minute demo video following script in `INSTRUCTIONS.md`.
+    2. Submit Devpost form with PR URL `https://github.com/CALLE-AI/awesome-phone-call-agents/pull/440` and YouTube/Vimeo video link.

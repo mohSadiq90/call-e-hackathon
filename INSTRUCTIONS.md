@@ -66,15 +66,14 @@ CALL-E supports five primary connection vectors. This repository provides implem
 ### A. Pull Request to Public Repository
 - **Target Repository**: [`https://github.com/CALLE-AI/awesome-phone-call-agents`](https://github.com/CALLE-AI/awesome-phone-call-agents)
 - **Target Branch**: `main`
+- **Submission Pull Request**: [`https://github.com/CALLE-AI/awesome-phone-call-agents/pull/440`](https://github.com/CALLE-AI/awesome-phone-call-agents/pull/440)
+- **PR Status**: **Open & Verified** (Title: `feat(skills): add supply-chain-supplier-status skill and enterprise application entry`)
 - **Contribution Area Selection**:
-  - `Agent Skills` -> Add skill entry linking to `skills/supply-chain-agent/SKILL.md`
-  - `Workflow Plugins` / `Functional Applications` -> Add entry under Enterprise / Supply Chain category linking to this repository.
-- **PR Format**:
-  - Clear title: `feat: Add Supply Chain Supplier Status Check Agent (SDK, CLI, MCP, Skill)`
-  - Provide concise description, architectural overview, live output screenshot/ascii table, and test suite verification results.
+  - `Agent Skills` -> Add skill entry linking to `skills/supply-chain-supplier-status/`
+  - `Enterprise Apps` -> Add entry linking to `https://github.com/mohSadiq90/call-e-hackathon`
 
 ### B. Devpost Submission Form Requirements
-1. **Pull Request URL**: Direct link to the open PR on `CALLE-AI/awesome-phone-call-agents`.
+1. **Pull Request URL**: [`https://github.com/CALLE-AI/awesome-phone-call-agents/pull/440`](https://github.com/CALLE-AI/awesome-phone-call-agents/pull/440)
 2. **Demonstration Video (~3 minutes)**:
    - Must be uploaded to **YouTube** or **Vimeo** and set to **Public** or **Unlisted** (publicly viewable).
    - **Video Structure (3-Minute Script)**:
