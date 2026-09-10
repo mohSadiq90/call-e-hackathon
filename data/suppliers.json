@@ -1,0 +1,157 @@
+[
+  {
+    "supplier": {
+      "id": "SUP-101",
+      "name": "Apex Microelectronics Corp",
+      "contact_name": "David Miller",
+      "phone": "+1-555-010-4821",
+      "email": "dmiller@apexmicro.com",
+      "category": "Critical Electronics",
+      "timezone": "America/Chicago"
+    },
+    "order": {
+      "order_id": "PO-91042",
+      "supplier_id": "SUP-101",
+      "item_description": "Optical Proximity Sensors (Model OP-40)",
+      "quantity": 10000,
+      "unit_cost_usd": 4.50,
+      "total_value_usd": 45000.00,
+      "committed_delivery_date": "2026-09-18",
+      "destination_facility": "DC-04 Bentonville Facility"
+    },
+    "mock_scenario": {
+      "status": "ON_TIME",
+      "revised_date": "2026-09-18",
+      "delay_days": 0,
+      "delay_category": "NONE",
+      "reason": "All 10,000 sensors passed QA testing and departed our Austin plant via FedEx Freight.",
+      "expedited_freight_cost": 0.0,
+      "escalation_name": "David Miller",
+      "escalation_phone": "+1-555-010-4821"
+    }
+  },
+  {
+    "supplier": {
+      "id": "SUP-102",
+      "name": "Pacific Packaging Solutions",
+      "contact_name": "Maria Gomez",
+      "phone": "+1-555-014-9923",
+      "email": "mgomez@pacificpackaging.com",
+      "category": "Packaging & Corrugated",
+      "timezone": "America/Los_Angeles"
+    },
+    "order": {
+      "order_id": "PO-88120",
+      "supplier_id": "SUP-102",
+      "item_description": "Heavy-Duty Corrugated Master Cartons (24x18x18)",
+      "quantity": 25000,
+      "unit_cost_usd": 1.20,
+      "total_value_usd": 30000.00,
+      "committed_delivery_date": "2026-09-15",
+      "destination_facility": "DC-08 Dallas Logistics Center"
+    },
+    "mock_scenario": {
+      "status": "DELAYED",
+      "revised_date": "2026-09-20",
+      "delay_days": 5,
+      "delay_category": "RAW_MATERIAL_SHORTAGE",
+      "reason": "Polymer resin adhesive shipment was delayed at the port, delaying carton gluing line.",
+      "expedited_freight_cost": 850.0,
+      "escalation_name": "Maria Gomez",
+      "escalation_phone": "+1-555-014-9923"
+    }
+  },
+  {
+    "supplier": {
+      "id": "SUP-103",
+      "name": "Global Precision Machining",
+      "contact_name": "Arthur Pendelton",
+      "phone": "+1-555-018-7734",
+      "email": "apendelton@globalprecision.com",
+      "category": "Castings & Enclosures",
+      "timezone": "America/Detroit"
+    },
+    "order": {
+      "order_id": "PO-74211",
+      "supplier_id": "SUP-103",
+      "item_description": "Die-Cast Aluminum Sensor Enclosures",
+      "quantity": 3000,
+      "unit_cost_usd": 18.50,
+      "total_value_usd": 55500.00,
+      "committed_delivery_date": "2026-09-16",
+      "destination_facility": "DC-04 Bentonville Facility"
+    },
+    "mock_scenario": {
+      "status": "DELAYED",
+      "revised_date": "2026-09-22",
+      "delay_days": 6,
+      "delay_category": "QUALITY_CONTROL_HOLD",
+      "reason": "Batch calibration variance detected during coordinate measuring inspection; re-machining required.",
+      "expedited_freight_cost": 2200.0,
+      "escalation_name": "Karen Vance (VP Quality)",
+      "escalation_phone": "+1-555-018-7740"
+    }
+  },
+  {
+    "supplier": {
+      "id": "SUP-104",
+      "name": "Metro Fasteners & Industrial Hardware",
+      "contact_name": "Samira Khan",
+      "phone": "+1-555-019-3312",
+      "email": "skhan@metrofasteners.com",
+      "category": "Standard Hardware",
+      "timezone": "America/Chicago"
+    },
+    "order": {
+      "order_id": "PO-62005",
+      "supplier_id": "SUP-104",
+      "item_description": "M6 Grade 8 Stainless Steel Flange Bolts",
+      "quantity": 50000,
+      "unit_cost_usd": 0.15,
+      "total_value_usd": 7500.00,
+      "committed_delivery_date": "2026-09-14",
+      "destination_facility": "DC-12 Atlanta Distribution Hub"
+    },
+    "mock_scenario": {
+      "status": "ON_TIME",
+      "revised_date": "2026-09-14",
+      "delay_days": 0,
+      "delay_category": "NONE",
+      "reason": "Palletized and staged on loading dock, scheduled for pickup by Old Dominion Freight.",
+      "expedited_freight_cost": 0.0,
+      "escalation_name": "Samira Khan",
+      "escalation_phone": "+1-555-019-3312"
+    }
+  },
+  {
+    "supplier": {
+      "id": "SUP-105",
+      "name": "Zenith Hydraulics & Motion Systems",
+      "contact_name": "Robert Hayes",
+      "phone": "+1-555-012-6644",
+      "email": "rhayes@zenithmotion.com",
+      "category": "Electro-Mechanical",
+      "timezone": "America/New_York"
+    },
+    "order": {
+      "order_id": "PO-51980",
+      "supplier_id": "SUP-105",
+      "item_description": "Double-Acting Hydraulic Actuator Cylinders",
+      "quantity": 400,
+      "unit_cost_usd": 125.00,
+      "total_value_usd": 50000.00,
+      "committed_delivery_date": "2026-09-17",
+      "destination_facility": "DC-04 Bentonville Facility"
+    },
+    "mock_scenario": {
+      "status": "DELAYED",
+      "revised_date": "2026-09-24",
+      "delay_days": 7,
+      "delay_category": "LOGISTICS_PORT_CONGESTION",
+      "reason": "Intermodal rail container hold at the Port of Long Beach caused a 5-day inland transit delay.",
+      "expedited_freight_cost": 3400.0,
+      "escalation_name": "Robert Hayes (Operations Director)",
+      "escalation_phone": "+1-555-012-6644"
+    }
+  }
+]

@@ -1,0 +1,6 @@
+supplier_id,supplier_name,contact_name,phone,order_id,item_description,quantity,unit_cost,total_value,committed_delivery_date,destination
+SUP-101,Apex Microelectronics Corp,David Miller,+1-555-010-4821,PO-91042,Optical Proximity Sensors (Model OP-40),10000,4.50,45000.00,2026-09-18,DC-04 Bentonville Facility
+SUP-102,Pacific Packaging Solutions,Maria Gomez,+1-555-014-9923,PO-88120,Heavy-Duty Corrugated Master Cartons (24x18x18),25000,1.20,30000.00,2026-09-15,DC-08 Dallas Logistics Center
+SUP-103,Global Precision Machining,Arthur Pendelton,+1-555-018-7734,PO-74211,Die-Cast Aluminum Sensor Enclosures,3000,18.50,55500.00,2026-09-16,DC-04 Bentonville Facility
+SUP-104,Metro Fasteners & Industrial Hardware,Samira Khan,+1-555-019-3312,PO-62005,M6 Grade 8 Stainless Steel Flange Bolts,50000,0.15,7500.00,2026-09-14,DC-12 Atlanta Distribution Hub
+SUP-105,Zenith Hydraulics & Motion Systems,Robert Hayes,+1-555-012-6644,PO-51980,Double-Acting Hydraulic Actuator Cylinders,400,125.00,50000.00,2026-09-17,DC-04 Bentonville Facility
