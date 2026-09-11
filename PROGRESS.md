@@ -190,3 +190,35 @@
     2. Record 3-minute demonstration video showcasing live calls and the new interactive web dashboard.
     3. Finalize Devpost submission.
 
+### [2026-09-11] - Repository Architecture & Upstream PR Clarification: Dual-Repo Mapping
+- **Features & Architecture Clarification**:
+  - **Dual-Repository Architecture Model Confirmed**:
+    1. **Forked Upstream Repository (`mohSadiq90/awesome-phone-call-agents`)**:
+       - Fork of the official `CALLE-AI/awesome-phone-call-agents` repository located at `/home/appdemo885/awesome-phone-call-agents`.
+       - Branch: `feat/supply-chain-supplier-status-agent`.
+       - Houses the portable Agent Skill specification (`skills/supply-chain-supplier-status/SKILL.md`, `references/safety.md`, `references/examples.md`) and the awesome-list README catalog entries.
+       - Source branch for official upstream **Pull Request #440**: [CALLE-AI/awesome-phone-call-agents#440](https://github.com/CALLE-AI/awesome-phone-call-agents/pull/440).
+    2. **Primary Standalone Implementation Repository (`mohSadiq90/call-e-hackathon`)**:
+       - Located at `/home/appdemo885/call-e-hackathon`.
+       - Hosts the complete production application: FastAPI REST API, interactive operations HTML dashboard (`output/procurement_dashboard.html`), 52-supplier enterprise dataset, dual-mode CALL-E SDK client & high-fidelity simulator, MCP server, and automated test suite.
+       - Linked directly in the upstream README and PR description as the runnable reference application.
+  - **Devpost Submission Linkage Verified**:
+    - **Pull Request URL**: `https://github.com/CALLE-AI/awesome-phone-call-agents/pull/440`
+    - **Project Codebase URL**: `https://github.com/mohSadiq90/call-e-hackathon`
+- **Verification & Testing**:
+  - Re-executed full automated test suite (`python3 -m unittest discover -s tests`). All 28/28 tests passing (100% pass rate).
+  - Validated disk space quota: `/home` at 46% utilization (2.5GB free out of 4.8GB).
+- **Key Files Modified / Referenced**:
+  - `PROGRESS.md`
+  - `INSTRUCTIONS.md`
+  - `output/procurement_dashboard.html`
+  - `output/procurement_status_report.csv`
+  - `output/procurement_status_report.json`
+- **Current Status & Next Steps**:
+  - **Current Status**: Upstream PR #440 is live and linked. Dual-repo setup fully verified. 28/28 unit tests passing.
+  - **Next Steps**:
+    1. Address any upstream review comments on PR #440 from maintainers.
+    2. Record 3-minute video walk-through featuring live/simulated calls and the enterprise dashboard.
+    3. Submit Devpost entry.
+
+
