@@ -17,6 +17,9 @@ This document provides the complete, authoritative operational instructions and 
 3. **Request Additional Calls**:
    - 20 calls may be consumed rapidly during development and demonstration recordings.
    - If running low on call credits, submit the official **CALL-E Additional Calls Request Form** to top up development credits before final recording.
+   - **Form Submission Project Blurb (2-3 Sentences)**:
+     > "We are building an autonomous Supply Chain Supplier Status Check Agent that uses CALL-E outbound voice calling to proactively verify purchase order fulfillment deadlines directly with vendor dispatchers. When delays occur, the agent executes a structured 5-step conversational protocol to diagnose root causes (such as raw material shortages or logistics congestion), negotiate revised delivery dates, and capture expedited freight or partial shipment options. Unstructured call transcripts are automatically parsed into typed procurement records and executive dashboards, quantifying SLA delay penalties to prevent costly manufacturing line stoppages before they happen."
+   - See [`docs/CALL_E_CREDITS_BLURB.md`](docs/CALL_E_CREDITS_BLURB.md) for full submission copy and variants.
 
 ---
 

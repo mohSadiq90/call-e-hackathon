@@ -103,3 +103,31 @@
   - **Next Steps**:
     1. Record 3-minute demo video following script in `INSTRUCTIONS.md`.
     2. Submit Devpost form with PR URL `https://github.com/CALLE-AI/awesome-phone-call-agents/pull/440` and YouTube/Vimeo video link.
+
+### [2026-09-11] - Project Description & Call-E Additional Credits Request Preparation
+- **Features & Enhancements**:
+  - **Standardized Project Description for Call-E Credit Top-Up**:
+    - Formulated an exact 2-3 sentence project description answering: *"In 2-3 sentences, tell us a little about the project you will be building - you can change your mind later ◡̈"*.
+    - Designed specifically for submission to the CALL-E team to secure additional live telephony API credits for demonstration and evaluation.
+    - Created primary (3 sentences) and concise (2 sentences) versions covering the autonomous dialer, 5-step conversational protocol, delay root cause analysis, financial penalty risk quantification, and structured dashboard synchronization.
+  - **Dedicated Submission Documentation (`docs/CALL_E_CREDITS_BLURB.md`)**:
+    - Created standalone reference document containing the copy-paste ready blurb, project metadata, track alignment, submission PR links, and supported modalities.
+  - **Integrated Guidelines (`INSTRUCTIONS.md` & `README.md`)**:
+    - Updated Step 1 in `INSTRUCTIONS.md` with the official blurb under "Request Additional Calls".
+    - Updated `README.md` repository tree and hackathon submission checklist linking to the new documentation.
+- **Bug Fixes & Refactoring**:
+  - Verified repository synchronization with `origin/main` prior to execution.
+  - Monitored disk usage against strict 5GB quota (`/home` at 46% with 2.5GB free).
+  - Re-verified full automated test suite (`tests/test_agent.py`, `tests/test_mcp.py`, `tests/test_models.py`, `tests/test_parser.py`) with 15/15 unit tests passing (100% pass rate).
+- **Key Files Modified**:
+  - `docs/CALL_E_CREDITS_BLURB.md` (new)
+  - `INSTRUCTIONS.md` (updated Step 1 with credit request copy)
+  - `README.md` (updated tree and checklist with blurb link)
+  - `PROGRESS.md` (updated with daily work log)
+- **Current Status & Next Steps**:
+  - **Current Status**: Project description ready for instant transmission to Call-E organizers; 15/15 unit tests passing.
+  - **Next Steps**:
+    1. Transmit the 2-3 sentence description to Call-E to obtain additional credits.
+    2. Record the 3-minute demonstration video using live CALL-E phone calls.
+    3. Finalize Devpost submission with demo video and PR #440.
+

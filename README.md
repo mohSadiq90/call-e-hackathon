@@ -197,6 +197,8 @@ call-e-hackathon/
 ├── config/
 │   ├── __init__.py
 │   └── settings.py                # Environment configuration loader
+├── docs/
+│   └── CALL_E_CREDITS_BLURB.md    # Official 2-3 sentence blurb for additional CALL-E credits
 ├── prompts/
 │   ├── __init__.py
 │   ├── supplier_agent_prompt.py   # 5-step conversation flow & system instructions
@@ -232,7 +234,8 @@ call-e-hackathon/
 - **Contribution Areas**: 
   - `Agent Skills` ([`skills/supply-chain-agent/SKILL.md`](skills/supply-chain-agent/SKILL.md))
   - `Workflow Plugins / Functional Applications` ([`src/mcp_server.py`](src/mcp_server.py) & [`main.py`](main.py))
-- **Community Submission**: Pull Request to [`CALLE-AI/awesome-phone-call-agents`](https://github.com/CALLE-AI/awesome-phone-call-agents)
+- **Community Submission**: Pull Request to [`CALLE-AI/awesome-phone-call-agents`](https://github.com/CALLE-AI/awesome-phone-call-agents) ([PR #440](https://github.com/CALLE-AI/awesome-phone-call-agents/pull/440))
+- **Additional CALL-E Credits Blurb**: [`docs/CALL_E_CREDITS_BLURB.md`](docs/CALL_E_CREDITS_BLURB.md)
 - **Devpost Submission Requirements**:
   - Pull Request URL on `CALLE-AI/awesome-phone-call-agents`
   - 3-minute public demonstration video on YouTube or Vimeo
