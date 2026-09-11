@@ -1,0 +1,326 @@
+"""
+Backend HTTP Server and REST API for CALL-E Supply Chain Intelligence Dashboard.
+Serves the intuitive HTML dashboard, provides RESTful endpoints to query call records,
+filter executive KPIs, and trigger live or simulated supplier verification calls.
+"""
+
+import argparse
+import json
+import os
+from pathlib import Path
+from typing import List, Optional, Dict, Any
+
+from fastapi import FastAPI, HTTPException, Query, Response
+from fastapi.responses import HTMLResponse, JSONResponse
+from pydantic import BaseModel, Field
+
+from config.settings import DATA_DIR, OUTPUT_DIR
+from src.models import (
+    Supplier,
+    PurchaseOrder,
+    CallResult,
+    FulfillmentStatus,
+    DelayReasonCategory,
+    BatchProcurementReport,
+)
+from src.calle_client import CalleSupplierAgentClient
+from src.reporter import ProcurementReporter
+from src.html_dashboard import render_html_dashboard
+
+# FastAPI application instance
+app = FastAPI(
+    title="CALL-E Supply Chain Intelligence API",
+    description="Enterprise Telephony Backend & Real-time Operations Dashboard",
+    version="1.0.0",
+)
+
+# Global State Container
+class DashboardBackendState:
+    def __init__(self):
+        self.data_path: Path = DATA_DIR / "suppliers_enterprise_50.json"
+        if not self.data_path.exists():
+            self.data_path = DATA_DIR / "suppliers.json"
+        self.reporter = ProcurementReporter(output_dir=OUTPUT_DIR)
+        self.client = CalleSupplierAgentClient(use_mock=True)
+        self.call_results: List[CallResult] = []
+        self.report: Optional[BatchProcurementReport] = None
+
+    def load_initial_data(self, dataset_path: Optional[Path] = None, force_recompute: bool = False):
+        if dataset_path:
+            self.data_path = dataset_path
+
+        # If existing report JSON exists and not forcing recompute, load from cache
+        report_cache = OUTPUT_DIR / "procurement_status_report.json"
+        if report_cache.exists() and not force_recompute:
+            try:
+                with open(report_cache, "r", encoding="utf-8") as f:
+                    cache_dict = json.load(f)
+                    cached_records = cache_dict.get("call_records", [])
+                    if "enterprise_50" in self.data_path.name and len(cached_records) < 50:
+                        raise ValueError("Cached report contains fewer records than enterprise dataset")
+                    self.report = BatchProcurementReport(**cache_dict)
+                    self.call_results = self.report.call_records
+                    print(f"[SERVER] Loaded {len(self.call_results)} call records from cache: {report_cache}")
+                    return
+            except Exception as e:
+                print(f"[SERVER] Failed to load cache ({e}), recomputing from dataset...")
+
+        # Otherwise execute mock calls from dataset
+        if not self.data_path.exists():
+            print(f"[SERVER WARN] Data path {self.data_path} not found, falling back to suppliers.json")
+            self.data_path = DATA_DIR / "suppliers.json"
+
+        with open(self.data_path, "r", encoding="utf-8") as f:
+            raw_data = json.load(f)
+
+        print(f"[SERVER] Processing {len(raw_data)} supplier orders from {self.data_path.name}...")
+        results = []
+        for item in raw_data:
+            supplier = Supplier(**item["supplier"])
+            order = PurchaseOrder(**item["order"])
+            mock_scenario = item.get("mock_scenario", {})
+            res = self.client.execute_call(
+                supplier=supplier,
+                order=order,
+                scenario_override=mock_scenario,
+            )
+            results.append(res)
+
+        self.call_results = results
+        self.report = self.reporter.generate_batch_report(self.call_results)
+        self.reporter.export_csv(self.call_results)
+        self.reporter.export_json(self.report)
+        self.reporter.export_html(self.report)
+        print(f"[SERVER] Initialized {len(self.call_results)} calls. Dashboard ready.")
+
+
+state = DashboardBackendState()
+
+
+class TriggerCallPayload(BaseModel):
+    supplier_id: str = "SUP-CUSTOM"
+    supplier_name: str = "Custom Global Logistics"
+    contact_name: str = "Operations Lead"
+    phone_number: str = "+1-555-010-0000"
+    order_id: str = "PO-99500"
+    item_description: str = "Critical Electronics Components"
+    quantity: int = 5000
+    unit_cost_usd: float = 12.50
+    total_value_usd: float = 62500.00
+    committed_delivery_date: str = "2026-09-25"
+    destination_facility: str = "DC-04 Bentonville Facility"
+    live: bool = False
+    mock_status: Optional[str] = "ON_TIME"
+    delay_days: Optional[int] = 0
+    delay_category: Optional[str] = "NONE"
+    delay_reason: Optional[str] = "Shipment on schedule."
+    expedited_freight_cost: Optional[float] = 0.0
+
+
+@app.on_event("startup")
+def startup_event():
+    """Initializes dataset on server startup."""
+    state.load_initial_data()
+
+
+@app.get("/", response_class=HTMLResponse)
+def get_dashboard_html():
+    """Serves the intuitive, interactive executive HTML dashboard."""
+    if not state.report:
+        state.load_initial_data()
+    html = render_html_dashboard(state.report)
+    return HTMLResponse(content=html, status_code=200)
+
+
+@app.get("/health")
+@app.get("/api/health")
+def health_check():
+    """Health check endpoint."""
+    if not state.call_results:
+        state.load_initial_data()
+    return {
+        "status": "healthy",
+        "service": "call-e-procurement-dashboard",
+        "version": "1.0.0",
+        "total_calls_loaded": len(state.call_results),
+    }
+
+
+@app.get("/api/summary", response_model=Dict[str, Any])
+def get_procurement_summary():
+    """Returns aggregated executive KPI metrics and summary report."""
+    if not state.report:
+        state.load_initial_data()
+    return state.report.model_dump()
+
+
+@app.get("/api/calls", response_model=List[Dict[str, Any]])
+def list_calls(
+    status: Optional[str] = Query(None, description="Filter by status: ON_TIME, DELAYED, PARTIAL_DISPATCH, UNREACHABLE"),
+    search: Optional[str] = Query(None, description="Search query string"),
+    category: Optional[str] = Query(None, description="Filter by delay root cause category"),
+    escalation_only: Optional[bool] = Query(False, description="Filter only critical escalations"),
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+):
+    """Queries call records with optional filtering and pagination."""
+    if not state.call_results:
+        state.load_initial_data()
+    records = state.call_results
+
+    if status and status.upper() != "ALL":
+        records = [r for r in records if r.fulfillment_status.value.upper() == status.upper()]
+
+    if category and category.upper() != "ALL":
+        records = [r for r in records if r.delay_category.value.upper() == category.upper()]
+
+    if escalation_only:
+        records = [r for r in records if r.escalation_required]
+
+    if search:
+        q = search.lower()
+        records = [
+            r for r in records
+            if q in r.order_id.lower()
+            or q in r.supplier_name.lower()
+            or q in r.contact_name.lower()
+            or q in (r.delay_notes or "").lower()
+            or q in r.delay_category.value.lower()
+        ]
+
+    paginated = records[offset : offset + limit]
+    return [r.model_dump() for r in paginated]
+
+
+@app.get("/api/calls/{call_id}", response_model=Dict[str, Any])
+def get_call_by_id(call_id: str):
+    """Retrieves single call record including full conversational transcript."""
+    if not state.call_results:
+        state.load_initial_data()
+    for r in state.call_results:
+        if r.call_id == call_id or r.order_id == call_id:
+            return r.model_dump()
+    raise HTTPException(status_code=404, detail=f"Call record '{call_id}' not found")
+
+
+@app.post("/api/calls/trigger")
+def trigger_outbound_call(payload: TriggerCallPayload):
+    """
+    Executes a new outbound supplier verification call via CALL-E SDK or high-fidelity simulation.
+    Appends the structured outcome to state and updates reports.
+    """
+    supp = Supplier(
+        id=payload.supplier_id,
+        name=payload.supplier_name,
+        contact_name=payload.contact_name,
+        phone=payload.phone_number,
+    )
+    po = PurchaseOrder(
+        order_id=payload.order_id,
+        supplier_id=payload.supplier_id,
+        item_description=payload.item_description,
+        quantity=payload.quantity,
+        unit_cost_usd=payload.unit_cost_usd,
+        total_value_usd=payload.total_value_usd,
+        committed_delivery_date=payload.committed_delivery_date,
+        destination_facility=payload.destination_facility,
+    )
+
+    scenario_override = None
+    if not payload.live:
+        scenario_override = {
+            "status": payload.mock_status or "ON_TIME",
+            "delay_days": payload.delay_days or 0,
+            "delay_category": payload.delay_category or "NONE",
+            "reason": payload.delay_reason or "All units confirmed packed and shipped.",
+            "expedited_freight_cost": payload.expedited_freight_cost or 0.0,
+            "escalation_name": payload.contact_name,
+            "escalation_phone": payload.phone_number,
+        }
+
+    client = CalleSupplierAgentClient(use_mock=not payload.live)
+    result = client.execute_call(
+        supplier=supp,
+        order=po,
+        scenario_override=scenario_override,
+    )
+
+    # Prepend new result to state
+    state.call_results.insert(0, result)
+    state.report = state.reporter.generate_batch_report(state.call_results)
+    state.reporter.export_csv(state.call_results)
+    state.reporter.export_json(state.report)
+    state.reporter.export_html(state.report)
+
+    return {
+        "success": True,
+        "message": f"Verification call executed successfully for {supp.name} ({po.order_id})",
+        "result": result.model_dump(),
+    }
+
+
+@app.get("/api/export/csv")
+def export_csv_report():
+    """Streams the generated CSV procurement report."""
+    csv_path = OUTPUT_DIR / "procurement_status_report.csv"
+    if not csv_path.exists():
+        state.reporter.export_csv(state.call_results)
+    with open(csv_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    return Response(
+        content=content,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=procurement_status_report.csv"},
+    )
+
+
+@app.get("/api/export/json")
+def export_json_report():
+    """Streams the generated JSON procurement status report."""
+    if not state.report:
+        state.load_initial_data()
+    return JSONResponse(
+        content=state.report.model_dump(),
+        headers={"Content-Disposition": "attachment; filename=procurement_status_report.json"},
+    )
+
+
+@app.post("/api/reload")
+def reload_dataset(dataset: Optional[str] = None):
+    """Reloads and recomputes data from the requested dataset."""
+    path = Path(dataset) if dataset else (DATA_DIR / "suppliers_enterprise_50.json")
+    state.load_initial_data(dataset_path=path, force_recompute=True)
+    return {
+        "success": True,
+        "message": f"Reloaded {len(state.call_results)} call records from {path.name}",
+        "total_orders": state.report.total_orders_checked,
+    }
+
+
+def start_server(host: str = "127.0.0.1", port: int = 8000, dataset_path: Optional[Path] = None):
+    """Starts the Uvicorn web server."""
+    import uvicorn
+
+    if dataset_path:
+        state.load_initial_data(dataset_path=dataset_path, force_recompute=True)
+    else:
+        state.load_initial_data()
+
+    print("=" * 70)
+    print(f"🚀 CALL-E Enterprise Telephony Dashboard & API Server Started")
+    print(f"• URL: http://{host}:{port}/")
+    print(f"• Loaded: {len(state.call_results)} supplier verification calls")
+    print(f"• REST API Docs: http://{host}:{port}/docs")
+    print("=" * 70)
+
+    uvicorn.run(app, host=host, port=port)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="CALL-E Supply Chain Dashboard Server")
+    parser.add_argument("--host", type=str, default="127.0.0.1", help="Host address to bind")
+    parser.add_argument("--port", type=int, default=8000, help="Port to bind")
+    parser.add_argument("--data", type=str, default=str(DATA_DIR / "suppliers_enterprise_50.json"), help="Dataset JSON path")
+    args = parser.parse_args()
+
+    start_server(host=args.host, port=args.port, dataset_path=Path(args.data))

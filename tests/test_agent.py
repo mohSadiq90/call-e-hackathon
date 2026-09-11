@@ -88,6 +88,9 @@ class TestAgentPipeline(unittest.TestCase):
         json_path = self.reporter.export_json(report, filename="test_report.json")
         self.assertTrue(json_path.exists())
 
+        html_path = self.reporter.export_html(report, filename="test_report.html")
+        self.assertTrue(html_path.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

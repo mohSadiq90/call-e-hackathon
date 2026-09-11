@@ -62,7 +62,25 @@ def main():
         "--output-dir",
         type=str,
         default=str(OUTPUT_DIR),
-        help="Directory to save CSV and JSON reports",
+        help="Directory to save CSV, JSON, and HTML reports",
+    )
+    parser.add_argument(
+        "--web",
+        "--serve",
+        action="store_true",
+        help="Launch interactive web dashboard HTTP server after verification",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port to bind web dashboard server (default: 8000)",
+    )
+    parser.add_argument(
+        "--host",
+        type=str,
+        default="127.0.0.1",
+        help="Host address to bind web dashboard server (default: 127.0.0.1)",
     )
 
     args = parser.parse_args()
@@ -113,13 +131,20 @@ def main():
     batch_report = reporter.generate_batch_report(call_results)
     csv_file = reporter.export_csv(call_results)
     json_file = reporter.export_json(batch_report)
+    html_file = reporter.export_html(batch_report)
 
     # 5. Display Console Dashboard
     reporter.print_terminal_dashboard(batch_report)
 
     print(f"🎉 Verification batch complete!")
-    print(f"   • CSV Export : {csv_file}")
-    print(f"   • JSON Export: {json_file}\n")
+    print(f"   • CSV Export      : {csv_file}")
+    print(f"   • JSON Export     : {json_file}")
+    print(f"   • HTML Dashboard  : {html_file}\n")
+
+    if args.web:
+        from src.server import start_server
+        print(f"🌐 Launching Interactive Web Dashboard on http://{args.host}:{args.port} ...")
+        start_server(host=args.host, port=args.port, dataset_path=Path(args.data))
 
 
 if __name__ == "__main__":

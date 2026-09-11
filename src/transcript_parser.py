@@ -52,8 +52,10 @@ class TranscriptParser:
         delayed_score = sum(1 for s in delayed_signals if s in lower)
         on_time_score = sum(1 for s in on_time_signals if s in lower)
 
-        if "unreachable" in lower or "voicemail" in lower or "no answer" in lower:
+        if "unreachable" in lower or "voicemail" in lower or "no answer" in lower or "unavailable" in lower:
             return FulfillmentStatus.UNREACHABLE
+        if "partial dispatch" in lower or "partial shipment" in lower or "partial lot" in lower:
+            return FulfillmentStatus.PARTIAL_DISPATCH
         if delayed_score > on_time_score and delayed_score > 0:
             return FulfillmentStatus.DELAYED
         if on_time_score > 0:

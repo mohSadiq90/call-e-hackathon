@@ -114,7 +114,11 @@ class CalleSupplierAgentClient:
     ) -> CallResult:
         """Generates high-fidelity simulated dialogue and extracts structured data."""
         scenario = scenario or {}
-        is_delayed = scenario.get("status") == "DELAYED"
+        scenario_status = scenario.get("status", "ON_TIME")
+        is_delayed = scenario_status == "DELAYED"
+        is_partial = scenario_status == "PARTIAL_DISPATCH"
+        is_unreachable = scenario_status == "UNREACHABLE"
+
         revised_date = scenario.get("revised_date", order.committed_delivery_date)
         delay_days = scenario.get("delay_days", 0)
         delay_reason = scenario.get("reason", "Standard dispatch on schedule.")
@@ -123,8 +127,35 @@ class CalleSupplierAgentClient:
         escalation_name = scenario.get("escalation_name", supplier.contact_name)
         escalation_phone = scenario.get("escalation_phone", supplier.phone)
 
+        call_status = "COMPLETED"
+
         # Build natural dialogue transcript
-        if not is_delayed:
+        if is_unreachable:
+            transcript = (
+                f"Agent: Hello, this is Alex calling from Enterprise Retail Logistics on a recorded line regarding Purchase Order {order.order_id} for {supplier.name}.\n"
+                f"Automated System: The party you are trying to reach ({supplier.phone}) is currently unavailable or the dispatch office is closed. Please leave a message after the tone.\n"
+                f"Agent: This is Alex with Procurement Operations. We urgently require status confirmation on PO {order.order_id}. Please return our call immediately.\n"
+                f"Automated System: Voicemail recorded. Goodbye."
+            )
+            duration = 28
+            call_status = "UNREACHABLE"
+        elif is_partial:
+            transcript = (
+                f"Agent: Hello, this is Alex calling from Enterprise Retail Logistics on a recorded line regarding Purchase Order {order.order_id}. "
+                f"Am I speaking with {supplier.contact_name} for {supplier.name}?\n"
+                f"Supplier: Hello Alex, yes this is {supplier.contact_name}. For PO {order.order_id}, we have a partial dispatch situation.\n"
+                f"Agent: I see. Could you explain the partial lot status and provide the revised date for the remaining balance?\n"
+                f"Supplier: {delay_reason} The initial partial shipment is en route, but the remaining units will arrive by {revised_date}.\n"
+                f"Agent: Will there be any expedited freight surcharge incurred to complete the remainder?\n"
+                f"Supplier: Yes, expedited freight to accelerate the remaining units will cost ${freight_cost:,.2f}.\n"
+                f"Agent: Understood. Who is the escalation manager overseeing completion of this order?\n"
+                f"Supplier: You can reach {escalation_name} directly at {escalation_phone}.\n"
+                f"Agent: Thank you {supplier.contact_name}. I have logged the partial dispatch, revised final delivery date of {revised_date}, "
+                f"and escalation contact. Goodbye.\n"
+                f"Supplier: Thank you for working with us, Alex. Goodbye."
+            )
+            duration = 115
+        elif not is_delayed:
             transcript = (
                 f"Agent: Hello, this is Alex calling from Enterprise Retail Logistics on a recorded line regarding Purchase Order {order.order_id}. "
                 f"Am I speaking with {supplier.contact_name} for {supplier.name}?\n"
@@ -162,7 +193,7 @@ class CalleSupplierAgentClient:
             order=order,
             transcript=transcript,
             duration=duration,
-            call_status="COMPLETED",
+            call_status=call_status,
             scenario_hint=scenario,
         )
 
@@ -185,19 +216,32 @@ class CalleSupplierAgentClient:
 
         # Fallback to scenario hints if regex parser needed ground truth assistance
         if scenario_hint:
-            if scenario_hint.get("status") == "DELAYED":
+            s_hint = scenario_hint.get("status")
+            if s_hint == "DELAYED":
                 status = FulfillmentStatus.DELAYED
                 revised_date = scenario_hint.get("revised_date", revised_date)
                 delay_cat = DelayReasonCategory(scenario_hint.get("delay_category", delay_cat.value))
                 freight_cost = float(scenario_hint.get("expedited_freight_cost", freight_cost))
                 esc_name = scenario_hint.get("escalation_name", esc_name)
                 esc_phone = scenario_hint.get("escalation_phone", esc_phone)
-            elif scenario_hint.get("status") == "ON_TIME":
+            elif s_hint == "PARTIAL_DISPATCH":
+                status = FulfillmentStatus.PARTIAL_DISPATCH
+                revised_date = scenario_hint.get("revised_date", revised_date)
+                delay_cat = DelayReasonCategory(scenario_hint.get("delay_category", delay_cat.value))
+                freight_cost = float(scenario_hint.get("expedited_freight_cost", freight_cost))
+                esc_name = scenario_hint.get("escalation_name", esc_name)
+                esc_phone = scenario_hint.get("escalation_phone", esc_phone)
+            elif s_hint == "UNREACHABLE":
+                status = FulfillmentStatus.UNREACHABLE
+                revised_date = order.committed_delivery_date
+                delay_cat = DelayReasonCategory.OTHER
+                call_status = "UNREACHABLE"
+            elif s_hint == "ON_TIME":
                 status = FulfillmentStatus.ON_TIME
                 revised_date = order.committed_delivery_date
 
         delay_days = 0
-        if status == FulfillmentStatus.DELAYED and revised_date:
+        if status in (FulfillmentStatus.DELAYED, FulfillmentStatus.PARTIAL_DISPATCH) and revised_date:
             delay_days = TranscriptParser.calculate_delay_days(order.committed_delivery_date, revised_date)
             if delay_days == 0 and scenario_hint:
                 delay_days = scenario_hint.get("delay_days", 3)
@@ -205,7 +249,13 @@ class CalleSupplierAgentClient:
         # Calculate estimated financial risk:
         # (delay_days * daily_penalty) + expedited_freight
         daily_penalty = DEFAULT_DAILY_DELAY_PENALTY_USD
-        financial_impact = (delay_days * daily_penalty) + freight_cost if status == FulfillmentStatus.DELAYED else 0.0
+        financial_impact = (delay_days * daily_penalty) + freight_cost if status in (FulfillmentStatus.DELAYED, FulfillmentStatus.PARTIAL_DISPATCH) else 0.0
+
+        escalation_required = (
+            (status == FulfillmentStatus.DELAYED and delay_days >= 3)
+            or (status == FulfillmentStatus.UNREACHABLE)
+            or (status == FulfillmentStatus.PARTIAL_DISPATCH and delay_days >= 4)
+        )
 
         return CallResult(
             call_id=call_id,
@@ -216,7 +266,7 @@ class CalleSupplierAgentClient:
             call_status=call_status,
             fulfillment_status=status,
             original_delivery_date=order.committed_delivery_date,
-            revised_delivery_date=revised_date if status == FulfillmentStatus.DELAYED else order.committed_delivery_date,
+            revised_delivery_date=revised_date if status in (FulfillmentStatus.DELAYED, FulfillmentStatus.PARTIAL_DISPATCH) else order.committed_delivery_date,
             delay_days=delay_days,
             delay_category=delay_cat,
             delay_notes=scenario_hint.get("reason") if scenario_hint else "Parsed from live call.",
@@ -224,7 +274,7 @@ class CalleSupplierAgentClient:
             estimated_financial_impact_usd=financial_impact,
             escalation_contact_name=esc_name or supplier.contact_name,
             escalation_contact_phone=esc_phone or supplier.phone,
-            escalation_required=(status == FulfillmentStatus.DELAYED and delay_days >= 3),
+            escalation_required=escalation_required,
             call_duration_seconds=duration,
             raw_transcript=transcript,
         )

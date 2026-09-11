@@ -113,16 +113,69 @@ python3 main.py --live --company-name "Walmart Global Procurement"
 python3 main.py --data data/suppliers.json --output-dir /tmp/procurement_reports
 ```
 
+### Run Simulation Batch & Launch Web Dashboard
+```bash
+python3 main.py --web
+```
+
+### Launch Standalone Web Dashboard Server
+```bash
+python3 -m src.server --port 8000
+```
+Then navigate to `http://localhost:8000` in your web browser.
+
+---
+
+## 🌐 Interactive Web Dashboard & REST API
+
+The CALL-E Supply Chain Intelligence platform includes an enterprise operations dashboard and RESTful API backend ([`src/server.py`](src/server.py) and [`src/html_dashboard.py`](src/html_dashboard.py)).
+
+### Key Dashboard Capabilities:
+1. **Executive Control Tower**:
+   - Live KPI metrics: Total Calls Executed, On-Time Fulfillment %, Delay Disruptions Count, Total Financial Exposure ($), Critical Escalations, and Autonomous Voice Hours Saved.
+2. **Visual Analytics & Taxonomy Breakdown**:
+   - Status distribution breakdown across all purchase orders.
+   - Root cause categorization (`RAW_MATERIAL_SHORTAGE`, `LOGISTICS_PORT_CONGESTION`, `QUALITY_CONTROL_HOLD`, `PRODUCTION_HALT`, etc.).
+   - Risk distribution segmented across supply lines.
+3. **Interactive Multi-Filter & Search Engine**:
+   - Quick-filter pills: All, On-Time, Delayed, Partial Dispatch, Unreachable, and Escalations Only.
+   - Category dropdown filter, sorting (Highest Financial Risk, Longest Delay, Date, Vendor Name).
+   - Real-time instant text search across PO numbers, vendor names, line items, and contacts.
+4. **Dual Display Modalities**:
+   - **Data Table View**: High-density operational table with status badges and risk calculations.
+   - **Cards Grid View**: Card-based visual overview.
+5. **Call Inspection & Audio Player Modal**:
+   - Full conversational transcript bubble visualization.
+   - CALL-E simulated HD voice audio player with animated equalizer waveform, speed adjustments (1.0x, 1.5x, 2.0x), and restart controls.
+   - Direct escalation contact card with clickable phone and email.
+6. **On-Demand Outbound Call Trigger**:
+   - Trigger new autonomous verification calls directly from the browser UI or REST API.
+7. **Offline Standalone Support**:
+   - The generated [`output/procurement_dashboard.html`](output/procurement_dashboard.html) is completely self-contained and can be opened directly as a static file (`file:///...`) with full interactivity, client-side fallback simulation, and CSV/JSON export.
+
+### REST API Endpoints:
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/` | Serves the interactive executive HTML operations dashboard |
+| `GET` | `/health`, `/api/health` | Health check endpoint returning loaded call count |
+| `GET` | `/api/summary` | Executive KPI aggregates and procurement status report |
+| `GET` | `/api/calls` | Query call records with filters (`?status=`, `?category=`, `?escalation_only=`, `?search=`) |
+| `GET` | `/api/calls/{call_id}` | Detailed call record with conversational transcript |
+| `POST` | `/api/calls/trigger` | Trigger outbound verification call (live or simulated) |
+| `GET` | `/api/export/csv` | Stream latest ERP-ready CSV report |
+| `GET` | `/api/export/json` | Stream latest machine-readable JSON report |
+| `POST` | `/api/reload` | Recompute or switch dataset on demand |
+
 ---
 
 ## 📊 Live Output & Executive Dashboard
 
-When executed, the agent prints a real-time executive dashboard and outputs clean CSV/JSON ledgers:
+When executed, the agent prints a real-time executive dashboard and outputs clean CSV, JSON, and HTML ledgers:
 
 ```text
 ================================================================================
   CALL-E AUTONOMOUS PROCUREMENT AGENT - DAILY STATUS REPORT
-  Generated: 2026-09-10T10:13:47Z | Report ID: rep_2478d003
+  Generated: 2026-09-11T11:36:15Z | Report ID: rep_a128967e
 ================================================================================
 
 📊 EXECUTIVE KPI SUMMARY:
@@ -155,29 +208,15 @@ PO-51980   | Zenith Hydraulics & .. | ⚠️ DELAYED | 2026-09-17 | 2026-09-24 |
 
 ## 🧪 Automated Testing
 
-A comprehensive test suite covers models, transcript parsing, and integration pipelines:
+A comprehensive test suite covers models, transcript parsing, MCP server, HTML dashboard rendering, and FastAPI REST endpoints:
 
 ```bash
-python3 -m unittest discover -s tests -v
+python3 -m unittest discover -s tests
 ```
 
 Output:
 ```text
-test_mock_call_delayed (test_agent.TestAgentPipeline) ... ok
-test_mock_call_on_time (test_agent.TestAgentPipeline) ... ok
-test_reporting_export (test_agent.TestAgentPipeline) ... ok
-test_call_result_model (test_models.TestModels) ... ok
-test_purchase_order_model (test_models.TestModels) ... ok
-test_supplier_model (test_models.TestModels) ... ok
-test_calculate_delay_days (test_parser.TestTranscriptParser) ... ok
-test_parse_cost (test_parser.TestTranscriptParser) ... ok
-test_parse_delay_category (test_parser.TestTranscriptParser) ... ok
-test_parse_revised_date (test_parser.TestTranscriptParser) ... ok
-test_parse_status_delayed (test_parser.TestTranscriptParser) ... ok
-test_parse_status_on_time (test_parser.TestTranscriptParser) ... ok
-
-----------------------------------------------------------------------
-Ran 12 tests in 0.019s
+Ran 28 tests in 0.194s
 
 OK
 ```
@@ -192,7 +231,7 @@ call-e-hackathon/
 ├── INSTRUCTIONS.md                # Hackathon guidelines, build specs & submission instructions
 ├── PROGRESS.md                    # Project work log and sprint tracker
 ├── pyproject.toml                 # Package configuration
-├── requirements.txt               # Dependencies
+├── requirements.txt               # Dependencies (pydantic, fastapi, uvicorn, calle-ai)
 ├── .env.example                   # Environment configuration template
 ├── config/
 │   ├── __init__.py
@@ -206,23 +245,35 @@ call-e-hackathon/
 ├── skills/
 │   └── supply-chain-agent/
 │       └── SKILL.md               # Reusable Antigravity / AI Agent Skill manifest
+├── scripts/
+│   └── generate_enterprise_data.py # 52-supplier enterprise dataset generator
 ├── src/
 │   ├── __init__.py
 │   ├── models.py                  # Pydantic schemas (PO, Supplier, CallResult)
 │   ├── calle_client.py            # CALL-E SDK client + High-fidelity simulator
 │   ├── transcript_parser.py       # Deterministic extraction of dates, costs, causes
-│   ├── reporter.py                # CSV, JSON, and ASCII dashboard generator
+│   ├── reporter.py                # CSV, JSON, ASCII, and HTML dashboard generator
+│   ├── html_dashboard.py          # Interactive single-page executive web dashboard
+│   ├── server.py                  # FastAPI HTTP backend & REST API server
 │   └── mcp_server.py              # Model Context Protocol (MCP) tool server
 ├── data/
 │   ├── suppliers.json             # 5 realistic test supplier records & scenarios
-│   └── suppliers.csv              # CSV format for ERP batch ingestion
+│   ├── suppliers.csv              # CSV format for ERP batch ingestion
+│   ├── suppliers_enterprise_50.json # 52 enterprise Fortune 500 supplier dataset
+│   └── suppliers_enterprise_50.csv  # 52 enterprise supplier CSV export
+├── output/
+│   ├── procurement_status_report.csv  # Structured ERP delivery ledger
+│   ├── procurement_status_report.json # Full audit trail & structured intelligence
+│   └── procurement_dashboard.html     # Interactive single-page executive dashboard
 ├── tests/
 │   ├── __init__.py
 │   ├── test_models.py             # Schema validation tests
 │   ├── test_parser.py             # Parsing & categorization tests
 │   ├── test_agent.py              # End-to-end pipeline & reporting tests
+│   ├── test_dashboard.py          # HTML dashboard structure & export tests
+│   ├── test_server.py             # FastAPI REST endpoints & filtering tests
 │   └── test_mcp.py                # MCP server protocol & tool tests
-└── main.py                        # CLI entry point
+└── main.py                        # CLI entry point with optional --web server flag
 ```
 
 ---

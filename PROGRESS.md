@@ -124,10 +124,69 @@
   - `INSTRUCTIONS.md` (updated Step 1 with credit request copy)
   - `README.md` (updated tree and checklist with blurb link)
   - `PROGRESS.md` (updated with daily work log)
+### [2026-09-11] - Phase 5 Implementation: Enterprise Operations Web Dashboard, REST API & 52-Supplier Dataset
+- **Features & Enhancements**:
+  - **Interactive Single-Page HTML Dashboard (`src/html_dashboard.py` & `output/procurement_dashboard.html`)**:
+    - Designed and implemented a responsive, executive-ready operations dashboard with zero external frontend runtime dependencies.
+    - **Executive Control Tower**: Real-time KPI summary displaying Total Calls Executed, On-Time Fulfillment %, Delay Disruptions Count, Total Financial Exposure ($), Critical Escalations, and Autonomous Voice Hours Saved.
+    - **Visual Analytics & Taxonomy**: Live distribution bars for fulfillment statuses, delay root causes (`RAW_MATERIAL_SHORTAGE`, `LOGISTICS_PORT_CONGESTION`, `QUALITY_CONTROL_HOLD`, `PRODUCTION_HALT`, etc.), and financial exposure across vendor categories.
+    - **Search & Multi-Pill Filters**: Instant multi-criteria filtering by fulfillment status pills (`ALL`, `ON_TIME`, `DELAYED`, `PARTIAL_DISPATCH`, `UNREACHABLE`, `ESCALATIONS`), category dropdown, sorting (Financial Risk, Delay Duration, Committed Date, Vendor Name), and real-time text query search across PO numbers, vendor names, line items, and contacts.
+    - **Dual View Modalities**: Seamless switching between dense operational Data Table view and responsive Card Grid view.
+    - **Call Inspection & Audio Player Modal**: Detailed drill-down modal featuring full conversational transcript bubbles, CALL-E simulated HD voice audio player with animated equalizer waveforms, playback speed controls (1.0x, 1.5x, 2.0x), restart capability, and direct escalation manager contacts.
+    - **On-Demand Outbound Call Trigger Modal**: In-browser modal to trigger live or simulated supplier verification calls with instant state updates.
+    - **Dual-Mode Offline / Online Architecture**: Runs connected to FastAPI backend or 100% standalone as static `file:///...` with client-side fallback simulation and CSV/JSON export.
+  - **FastAPI HTTP Backend & REST API Server (`src/server.py`)**:
+    - Implemented production REST API server serving the interactive HTML dashboard and comprehensive endpoints:
+      - `GET /`: Serves interactive HTML dashboard.
+      - `GET /health` & `GET /api/health`: Service health check with loaded call count.
+      - `GET /api/summary`: Aggregated executive procurement KPIs.
+      - `GET /api/calls`: Filterable call records (`status`, `category`, `search`, `escalation_only`, pagination).
+      - `GET /api/calls/{call_id}`: Detailed call record and raw conversational transcript.
+      - `POST /api/calls/trigger`: Dispatches automated supplier call and updates state.
+      - `GET /api/export/csv`: Streams latest CSV report.
+      - `GET /api/export/json`: Streams latest JSON report.
+      - `POST /api/reload`: Reloads and recomputes datasets on demand.
+  - **52-Supplier Enterprise Dataset (`scripts/generate_enterprise_data.py`, `data/suppliers_enterprise_50.json`, `data/suppliers_enterprise_50.csv`)**:
+    - Created script and dataset simulating Fortune 500 procurement operations across 10 industrial categories (Semiconductors, Optics, Packaging, Heavy Mechanics, Fasteners, etc.).
+    - Realistic distribution: on-time deliveries, multi-day delays across diverse root causes, partial shipments, and unreachable switchboards.
+  - **CLI & Pipeline Integration (`main.py`, `src/reporter.py`, `src/models.py`, `src/calle_client.py`)**:
+    - Added `export_html` to `ProcurementReporter` for automatic generation of `output/procurement_dashboard.html`.
+    - Added `--web` / `--serve`, `--host`, `--port` flags to `main.py` to seamlessly launch the dashboard server after batch execution.
+    - Extended data models with `partial_dispatch_count` and support for `PARTIAL_DISPATCH` and `UNREACHABLE` states in `CalleSupplierAgentClient` and `TranscriptParser`.
+  - **Expanded Automated Testing Suite (`tests/test_dashboard.py`, `tests/test_server.py`, `tests/test_agent.py`, `tests/test_parser.py`)**:
+    - Created `tests/test_dashboard.py` testing HTML structure, KPI blocks, modals, and disk export.
+    - Created `tests/test_server.py` using `fastapi.testclient.TestClient` verifying all endpoints, filters, single call lookups, call triggering, CSV/JSON streaming, and reloads.
+    - Updated `test_agent.py` to verify HTML export and `test_parser.py` for `PARTIAL_DISPATCH` and `UNREACHABLE` detection.
+    - Test suite expanded from 15 to 28 passing unit tests (100% pass rate).
+  - **Documentation Updates (`README.md`, `requirements.txt`, `pyproject.toml`)**:
+    - Documented Web Dashboard & REST API in `README.md`, updated test results (28/28 tests), and updated repository structure.
+    - Added `fastapi>=0.100.0` and `uvicorn>=0.20.0` to `requirements.txt` and `pyproject.toml`, plus `supplier-dashboard` script entry point.
+- **Bug Fixes & Refactoring**:
+  - Ensured server caching logic distinguishes between small 5-item test datasets and 52-item enterprise datasets.
+  - Added auto-initialization in API endpoints so health checks and call queries work reliably in all invocation sequences.
+- **Key Files Modified / Created**:
+  - `src/html_dashboard.py` (new)
+  - `src/server.py` (new)
+  - `scripts/generate_enterprise_data.py` (new)
+  - `data/suppliers_enterprise_50.json` & `data/suppliers_enterprise_50.csv` (new)
+  - `output/procurement_dashboard.html` (new)
+  - `tests/test_dashboard.py` (new)
+  - `tests/test_server.py` (new)
+  - `main.py`
+  - `src/reporter.py`
+  - `src/models.py`
+  - `src/calle_client.py`
+  - `src/transcript_parser.py`
+  - `tests/test_agent.py`
+  - `tests/test_parser.py`
+  - `requirements.txt`
+  - `pyproject.toml`
+  - `README.md`
+  - `PROGRESS.md`
 - **Current Status & Next Steps**:
-  - **Current Status**: Project description ready for instant transmission to Call-E organizers; 15/15 unit tests passing.
+  - **Current Status**: Web Dashboard & REST API backend fully operational and integrated with 28/28 unit tests passing (100% pass rate).
   - **Next Steps**:
-    1. Transmit the 2-3 sentence description to Call-E to obtain additional credits.
-    2. Record the 3-minute demonstration video using live CALL-E phone calls.
-    3. Finalize Devpost submission with demo video and PR #440.
+    1. Transmit project description blurb to CALL-E team for credit grant.
+    2. Record 3-minute demonstration video showcasing live calls and the new interactive web dashboard.
+    3. Finalize Devpost submission.
 

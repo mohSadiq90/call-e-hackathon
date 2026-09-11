@@ -84,6 +84,7 @@ class BatchProcurementReport(BaseModel):
     on_time_count: int
     delayed_count: int
     unreachable_count: int
+    partial_dispatch_count: int = 0
     on_time_percentage: float
     total_financial_risk_usd: float
     critical_escalations: List[CallResult] = []

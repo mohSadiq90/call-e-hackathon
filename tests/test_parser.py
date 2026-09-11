@@ -23,6 +23,22 @@ class TestTranscriptParser(unittest.TestCase):
         status = TranscriptParser.parse_status(transcript)
         self.assertEqual(status, FulfillmentStatus.DELAYED)
 
+    def test_parse_status_partial_dispatch(self):
+        transcript = (
+            "Agent: What is the status of PO-91009?\n"
+            "Supplier: We have a partial dispatch situation. 1,400 units are en route."
+        )
+        status = TranscriptParser.parse_status(transcript)
+        self.assertEqual(status, FulfillmentStatus.PARTIAL_DISPATCH)
+
+    def test_parse_status_unreachable(self):
+        transcript = (
+            "Agent: Urgent status verification on PO-91015.\n"
+            "Automated System: The party you are trying to reach is currently unavailable. Please leave a voicemail."
+        )
+        status = TranscriptParser.parse_status(transcript)
+        self.assertEqual(status, FulfillmentStatus.UNREACHABLE)
+
     def test_parse_revised_date(self):
         transcript = "Our revised date is September 22. We guarantee delivery on September 22."
         revised = TranscriptParser.parse_revised_date(transcript, "September 15")

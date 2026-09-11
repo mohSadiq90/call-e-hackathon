@@ -12,6 +12,7 @@ from datetime import datetime
 
 from config.settings import OUTPUT_DIR
 from src.models import CallResult, BatchProcurementReport, FulfillmentStatus
+from src.html_dashboard import render_html_dashboard
 
 
 class ProcurementReporter:
@@ -27,6 +28,7 @@ class ProcurementReporter:
         on_time = sum(1 for r in results if r.fulfillment_status == FulfillmentStatus.ON_TIME)
         delayed = sum(1 for r in results if r.fulfillment_status == FulfillmentStatus.DELAYED)
         unreachable = sum(1 for r in results if r.fulfillment_status == FulfillmentStatus.UNREACHABLE)
+        partial = sum(1 for r in results if r.fulfillment_status == FulfillmentStatus.PARTIAL_DISPATCH)
         pct = (on_time / total * 100.0) if total > 0 else 0.0
 
         total_financial_risk = sum(r.estimated_financial_impact_usd for r in results)
@@ -38,6 +40,7 @@ class ProcurementReporter:
             on_time_count=on_time,
             delayed_count=delayed,
             unreachable_count=unreachable,
+            partial_dispatch_count=partial,
             on_time_percentage=round(pct, 1),
             total_financial_risk_usd=round(total_financial_risk, 2),
             critical_escalations=critical_escalations,
@@ -87,6 +90,16 @@ class ProcurementReporter:
             json.dump(report.model_dump(), f, indent=2)
 
         print(f"[REPORTER] JSON report successfully saved to: {path}")
+        return path
+
+    def export_html(self, report: BatchProcurementReport, filename: str = "procurement_dashboard.html", api_base_url: str = "") -> Path:
+        """Generates an intuitive, interactive HTML executive dashboard for browser inspection."""
+        path = self.output_dir / filename
+        html_content = render_html_dashboard(report, api_base_url=api_base_url)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(html_content)
+
+        print(f"[REPORTER] Interactive HTML Dashboard successfully saved to: {path}")
         return path
 
     def print_terminal_dashboard(self, report: BatchProcurementReport):
