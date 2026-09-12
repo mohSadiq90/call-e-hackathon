@@ -7,6 +7,7 @@ filter executive KPIs, and trigger live or simulated supplier verification calls
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 
@@ -268,15 +269,30 @@ def list_calls(
         records = [r for r in records if r.recording_url]
 
     if search:
-        q = search.lower()
-        records = [
-            r for r in records
-            if q in r.order_id.lower()
-            or q in r.supplier_name.lower()
-            or q in r.contact_name.lower()
-            or q in (r.delay_notes or "").lower()
-            or q in r.delay_category.value.lower()
-        ]
+        q = search.lower().strip()
+        q_digits = re.sub(r"\D", "", q)
+
+        def _matches(r: CallResult) -> bool:
+            if (
+                q in r.order_id.lower()
+                or q in r.supplier_name.lower()
+                or q in r.contact_name.lower()
+                or q in r.phone_number.lower()
+                or q in r.call_id.lower()
+                or q in (r.escalation_contact_name or "").lower()
+                or q in (r.escalation_contact_phone or "").lower()
+                or q in (r.delay_notes or "").lower()
+                or q in r.delay_category.value.lower()
+            ):
+                return True
+            if len(q_digits) >= 3:
+                phone_digits = re.sub(r"\D", "", r.phone_number)
+                esc_digits = re.sub(r"\D", "", r.escalation_contact_phone or "")
+                if q_digits in phone_digits or q_digits in esc_digits:
+                    return True
+            return False
+
+        records = [r for r in records if _matches(r)]
 
     paginated = records[offset : offset + limit]
     return [r.model_dump() for r in paginated]
@@ -290,6 +306,10 @@ def get_call_by_id(call_id: str):
     for r in state.call_results:
         if r.call_id == call_id or r.order_id == call_id:
             return r.model_dump()
+    # Check SQLite database directly as fallback
+    db_rec = state.db.get_call_by_id(call_id) or state.db.get_call_by_order_id(call_id)
+    if db_rec:
+        return db_rec.model_dump()
     raise HTTPException(status_code=404, detail=f"Call record '{call_id}' not found")
 
 

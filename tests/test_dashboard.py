@@ -214,6 +214,15 @@ class TestHtmlDashboard(unittest.TestCase):
         self.assertIn("/api/calls/call_real_embedded/audio", html)
         self.assertIn("call_real_embedded", html)
 
+    def test_html_dashboard_phone_and_call_id_search_support(self):
+        """Validates that rendered HTML includes phone number and call ID search capabilities."""
+        html = render_html_dashboard(self.report)
+        self.assertIn("Phone (+1-563...)", html)
+        self.assertIn("queryDigits", html)
+        self.assertIn("phoneDigits", html)
+        self.assertIn("c.phone_number", html)
+        self.assertIn("c.call_id", html)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1210,7 +1210,7 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
           type="text"
           id="search-input"
           class="search-input"
-          placeholder="Search by PO ID, Supplier, Item, Contact, Reason..."
+          placeholder="Search by PO #, Supplier, Contact, Phone (+1-563...), or Call ID..."
           oninput="applyFilters()"
         />
       </div>
@@ -1613,7 +1613,9 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
 
     // Filter and Sort Engine
     function applyFilters() {{
-      const query = (document.getElementById('search-input').value || '').toLowerCase();
+      const rawQuery = (document.getElementById('search-input').value || '').trim();
+      const query = rawQuery.toLowerCase();
+      const queryDigits = rawQuery.replace(/\\D/g, '');
       const catFilter = document.getElementById('category-filter').value;
       const sortMode = document.getElementById('sort-filter').value;
 
@@ -1630,8 +1632,16 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
 
         // Text query
         if (query) {{
-          const matchTarget = `${{c.order_id}} ${{c.supplier_name}} ${{c.contact_name}} ${{c.delay_notes || ''}} ${{c.delay_category || ''}}`.toLowerCase();
-          if (!matchTarget.includes(query)) return false;
+          const matchTarget = `${{c.order_id}} ${{c.supplier_name}} ${{c.contact_name}} ${{c.phone_number || ''}} ${{c.call_id || ''}} ${{c.escalation_contact_name || ''}} ${{c.escalation_contact_phone || ''}} ${{c.delay_notes || ''}} ${{c.delay_category || ''}}`.toLowerCase();
+          let matched = matchTarget.includes(query);
+          if (!matched && queryDigits.length >= 3) {{
+            const phoneDigits = (c.phone_number || '').replace(/\\D/g, '');
+            const escDigits = (c.escalation_contact_phone || '').replace(/\\D/g, '');
+            if (phoneDigits.includes(queryDigits) || escDigits.includes(queryDigits)) {{
+              matched = true;
+            }}
+          }}
+          if (!matched) return false;
         }}
 
         return true;

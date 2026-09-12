@@ -301,6 +301,42 @@ class TestProcurementDatabaseUnit(unittest.TestCase):
             col_names = [r["name"] for r in cursor.fetchall()]
             self.assertIn("recording_url", col_names)
 
+    def test_search_by_phone_number_and_call_id(self):
+        """list_calls search should match formatted phone numbers, raw phone digits, and call_id."""
+        c1 = self._create_sample_call(call_id="call_BX2osyVHhnrQgDngurhn8w", order_id="PO-88219")
+        c1.phone_number = "+1-563-281-3105"
+        c1.escalation_contact_phone = "+1-563-999-8888"
+        self.db.upsert_call_result(c1)
+
+        c2 = self._create_sample_call(call_id="call_NORMAL_002", order_id="PO-99999")
+        c2.phone_number = "+1-800-555-0199"
+        self.db.upsert_call_result(c2)
+
+        # 1. Search by exact formatted phone
+        res_exact = self.db.list_calls(search="+1-563-281-3105")
+        self.assertEqual(len(res_exact), 1)
+        self.assertEqual(res_exact[0].order_id, "PO-88219")
+
+        # 2. Search by raw digits
+        res_digits = self.db.list_calls(search="5632813105")
+        self.assertEqual(len(res_digits), 1)
+        self.assertEqual(res_digits[0].order_id, "PO-88219")
+
+        # 3. Search by partial phone
+        res_part = self.db.list_calls(search="563-281")
+        self.assertEqual(len(res_part), 1)
+        self.assertEqual(res_part[0].order_id, "PO-88219")
+
+        # 4. Search by call_id substring
+        res_call_id = self.db.list_calls(search="BX2osy")
+        self.assertEqual(len(res_call_id), 1)
+        self.assertEqual(res_call_id[0].order_id, "PO-88219")
+
+        # 5. Search by escalation contact phone
+        res_esc_phone = self.db.list_calls(search="5639998888")
+        self.assertEqual(len(res_esc_phone), 1)
+        self.assertEqual(res_esc_phone[0].order_id, "PO-88219")
+
 
 class TestDatabaseServerIntegration(unittest.TestCase):
     """Integration tests verifying server state synchronization with SQLite."""

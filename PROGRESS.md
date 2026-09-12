@@ -377,10 +377,50 @@
   - `README.md`
   - `PROGRESS.md`
 - **Current Status & Next Steps**:
-  - **Current Status**: Real CALL-E SDK recording URL, streaming endpoints, and HTML5 audio player complete, fully tested, and verified with 51/51 tests passing.
+### [2026-09-12] - Phase 8: Universal Search Index (Phone Numbers, Call IDs, Escalation Contacts), SQLite Query Optimization & Hostinger VPS Live Deployment
+- **Features & Enhancements**:
+  - **Universal Search Index across Frontend & Backend (`src/html_dashboard.py`, `src/database.py`, `src/server.py`)**:
+    - Expanded search matching across all communication and identity vectors: `order_id`, `supplier_name`, `contact_name`, `phone_number`, `call_id`, `escalation_contact_name`, `escalation_contact_phone`, `delay_notes`, `delay_category`.
+    - Implemented normalized digit search for phone numbers: strips non-digit characters (`\D`) so searches for `+1-563-281-3105`, `563-281-3105`, `5632813105`, or partial phone prefixes immediately match target supplier records.
+    - Updated frontend input placeholder to explicitly guide users: `Search by PO #, Supplier, Contact, Phone (+1-563...), or Call ID...`.
+  - **SQLite Database Search Query Optimization (`src/database.py`)**:
+    - Enhanced `list_calls()` with multi-column `LIKE` clauses across primary phone numbers, escalation phone numbers, and call IDs.
+    - Added digit-wildcard pattern matching (`%5%6%3%...%`) to match raw numeric input queries against formatted telephone numbers in relational tables.
+  - **FastAPI REST API Search & Lookup Fallback (`src/server.py`)**:
+    - Updated `GET /api/calls?search=...` to support phone numbers (both formatted and unformatted digits) and call IDs.
+    - Added direct SQLite fallback in `GET /api/calls/{call_id}` to resolve call IDs and order IDs directly from the database if not currently held in in-memory cache.
+  - **Hostinger VPS Live Deployment (`calle.fyro.cloud`)**:
+    - Synchronized live production repository `/var/www/call-e-hackathon` on Hostinger VPS with latest `origin/main` code.
+    - Updated Python dependencies in virtual environment (`requirements.txt`).
+    - Restarted `calle.service` systemd daemon with automated health check verification on `https://calle.fyro.cloud`.
+    - Verified verified real call `PO-88219` (`MicroSilicon Global Corp` / `call_BX2osyVHhnrQgDngurhn8w`) is live, searchable by phone number `563-281-3105`, and streams verified telephony WAV audio.
+  - **Automated Testing Suite Expansion (`tests/`)**:
+    - Added 3 new unit & integration tests across 3 test suites:
+      - `tests/test_database.py`: `test_search_by_phone_number_and_call_id` (verifies exact phone, raw digits, partial phone, call_id substring, and escalation phone search).
+      - `tests/test_server.py`: `test_api_calls_search_by_phone_and_call_id` (verifies REST API search by formatted phone, raw digits, call ID, and PO ID).
+      - `tests/test_dashboard.py`: `test_html_dashboard_phone_and_call_id_search_support` (verifies rendered HTML includes search placeholder, `queryDigits`, and `phoneDigits` match logic).
+    - Test suite expanded from 51 to **54 passing tests (100% pass rate in 0.54s)**.
+- **Verification & Testing**:
+  - Full test suite passed: `python3 -m unittest discover -s tests` (54/54 tests passing, 100% success rate).
+  - Disk space utilization: `/home` at 47% (2.5GB free out of 4.8GB), all caches routed to `/tmp`.
+- **Key Files Created / Modified**:
+  - `src/html_dashboard.py`
+  - `src/database.py`
+  - `src/server.py`
+  - `tests/test_database.py`
+  - `tests/test_server.py`
+  - `tests/test_dashboard.py`
+  - `output/procurement_dashboard.html`
+  - `output/procurement_status_report.csv`
+  - `output/procurement_status_report.json`
+  - `README.md`
+  - `PROGRESS.md`
+- **Current Status & Next Steps**:
+  - **Current Status**: All search enhancements and live Hostinger VPS deployment completed and verified. 54/54 automated tests passing.
   - **Next Steps**:
-    1. Deploy to live Hostinger VPS (`calle.fyro.cloud`).
-    2. Record final 3-minute video walkthrough showcasing live audio playback, transcript scrubbing, and procurement KPI calculations.
+    1. Record final 3-minute video walkthrough showcasing live audio playback, transcript scrubbing, and procurement KPI calculations on `https://calle.fyro.cloud`.
+    2. Submit Devpost entry with live URL and YouTube video link.
+
 
 
 

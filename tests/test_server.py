@@ -195,6 +195,32 @@ class TestServerAPI(unittest.TestCase):
         self.assertGreaterEqual(len(calls), 1)
         self.assertTrue(all(bool(c.get("recording_url")) for c in calls))
 
+    def test_api_calls_search_by_phone_and_call_id(self):
+        """GET /api/calls?search=... should match phone numbers (formatted/digits) and call IDs."""
+        # 1. Search by formatted phone number
+        resp1 = self.client.get("/api/calls?search=563-281-3105")
+        self.assertEqual(resp1.status_code, 200)
+        orders1 = [c["order_id"] for c in resp1.json()]
+        self.assertIn("PO-88219", orders1)
+
+        # 2. Search by raw phone digits
+        resp2 = self.client.get("/api/calls?search=5632813105")
+        self.assertEqual(resp2.status_code, 200)
+        orders2 = [c["order_id"] for c in resp2.json()]
+        self.assertIn("PO-88219", orders2)
+
+        # 3. Search by call_id substring
+        resp3 = self.client.get("/api/calls?search=BX2osy")
+        self.assertEqual(resp3.status_code, 200)
+        orders3 = [c["order_id"] for c in resp3.json()]
+        self.assertIn("PO-88219", orders3)
+
+        # 4. Search by PO ID
+        resp4 = self.client.get("/api/calls?search=PO-88219")
+        self.assertEqual(resp4.status_code, 200)
+        orders4 = [c["order_id"] for c in resp4.json()]
+        self.assertIn("PO-88219", orders4)
+
 
 if __name__ == "__main__":
     unittest.main()

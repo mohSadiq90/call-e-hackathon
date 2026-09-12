@@ -5,6 +5,7 @@ CRUD operations for suppliers, purchase orders, and structured call outcomes.
 """
 
 import json
+import re
 import sqlite3
 from pathlib import Path
 from typing import List, Optional, Dict, Any, Union
@@ -329,15 +330,28 @@ class ProcurementDatabase:
             query += " AND recording_url IS NOT NULL AND recording_url != ''"
 
         if search:
+            search_clean = search.strip().lower()
+            digits = re.sub(r"\D", "", search_clean)
             query += """ AND (
                 LOWER(order_id) LIKE ? OR
                 LOWER(supplier_name) LIKE ? OR
                 LOWER(contact_name) LIKE ? OR
-                LOWER(delay_notes) LIKE ? OR
+                LOWER(phone_number) LIKE ? OR
+                LOWER(call_id) LIKE ? OR
+                LOWER(COALESCE(escalation_contact_name, '')) LIKE ? OR
+                LOWER(COALESCE(escalation_contact_phone, '')) LIKE ? OR
+                LOWER(COALESCE(delay_notes, '')) LIKE ? OR
                 LOWER(delay_category) LIKE ?
-            )"""
-            term = f"%{search.lower()}%"
-            params.extend([term, term, term, term, term])
+            """
+            term = f"%{search_clean}%"
+            params.extend([term, term, term, term, term, term, term, term, term])
+
+            if len(digits) >= 3:
+                digit_wildcard = "%" + "%".join(list(digits)) + "%"
+                query += " OR phone_number LIKE ? OR COALESCE(escalation_contact_phone, '') LIKE ?"
+                params.extend([digit_wildcard, digit_wildcard])
+
+            query += " )"
 
         # Order by newest timestamp first
         query += " ORDER BY timestamp DESC"
