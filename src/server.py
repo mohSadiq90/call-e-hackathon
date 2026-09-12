@@ -117,6 +117,13 @@ class TriggerCallPayload(BaseModel):
     expedited_freight_cost: Optional[float] = 0.0
 
 
+class TriggerBatchWorkflowPayload(BaseModel):
+    category: Optional[str] = "ALL"
+    max_orders: Optional[int] = 5
+    live: bool = False
+
+
+
 @app.on_event("startup")
 def startup_event():
     """Initializes dataset on server startup."""
@@ -257,6 +264,63 @@ def trigger_outbound_call(payload: TriggerCallPayload):
         "message": f"Verification call executed successfully for {supp.name} ({po.order_id})",
         "result": result.model_dump(),
     }
+
+
+@app.post("/api/workflow/trigger-batch")
+def trigger_batch_workflow(payload: Optional[TriggerBatchWorkflowPayload] = None):
+    """
+    Triggers an autonomous batch verification workflow across supplier purchase orders.
+    Enables single-click bulk verification from the web dashboard or external webhooks.
+    """
+    if payload is None:
+        payload = TriggerBatchWorkflowPayload()
+
+    dataset_path = state.data_path if state.data_path.exists() else (DATA_DIR / "suppliers.json")
+    with open(dataset_path, "r", encoding="utf-8") as f:
+        raw_data = json.load(f)
+
+    # Filter items by category if provided
+    items_to_process = []
+    for item in raw_data:
+        supp_cat = item.get("supplier", {}).get("category", "")
+        if payload.category and payload.category.upper() != "ALL":
+            if payload.category.lower() not in supp_cat.lower():
+                continue
+        items_to_process.append(item)
+
+    limit = payload.max_orders if payload.max_orders and payload.max_orders > 0 else 5
+    items_to_process = items_to_process[:limit]
+
+    client = CalleSupplierAgentClient(use_mock=not payload.live)
+    new_results = []
+    for item in items_to_process:
+        supp = Supplier(**item["supplier"])
+        order = PurchaseOrder(**item["order"])
+        mock_scenario = item.get("mock_scenario", {}) if not payload.live else None
+        res = client.execute_call(
+            supplier=supp,
+            order=order,
+            scenario_override=mock_scenario,
+        )
+        new_results.append(res)
+
+    # Prepend new results to state in reverse order so latest is on top
+    for res in reversed(new_results):
+        state.call_results.insert(0, res)
+
+    state.report = state.reporter.generate_batch_report(state.call_results)
+    state.reporter.export_csv(state.call_results)
+    state.reporter.export_json(state.report)
+    state.reporter.export_html(state.report)
+
+    return {
+        "success": True,
+        "message": f"Autonomous batch workflow executed: {len(new_results)} supplier calls completed.",
+        "processed_count": len(new_results),
+        "total_calls": len(state.call_results),
+        "results": [r.model_dump() for r in new_results],
+    }
+
 
 
 @app.get("/api/export/csv")

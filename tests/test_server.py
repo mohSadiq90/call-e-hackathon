@@ -132,6 +132,22 @@ class TestServerAPI(unittest.TestCase):
         data = resp.json()
         self.assertIn("call_records", data)
 
+    def test_api_trigger_batch_workflow(self):
+        """POST /api/workflow/trigger-batch should run batch verification and return results."""
+        initial_count = len(state.call_results)
+        payload = {
+            "category": "Critical Electronics",
+            "max_orders": 2,
+            "live": False,
+        }
+        resp = self.client.post("/api/workflow/trigger-batch", json=payload)
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertTrue(data["success"])
+        self.assertIn("processed_count", data)
+        self.assertGreater(data["processed_count"], 0)
+        self.assertEqual(len(state.call_results), initial_count + data["processed_count"])
+
     def test_api_reload(self):
         """POST /api/reload should reload the dataset."""
         resp = self.client.post("/api/reload")
@@ -143,3 +159,5 @@ class TestServerAPI(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+

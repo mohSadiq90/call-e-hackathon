@@ -216,10 +216,20 @@ python3 -m unittest discover -s tests
 
 Output:
 ```text
-Ran 28 tests in 0.194s
+Ran 29 tests in 0.165s
 
 OK
 ```
+
+---
+
+## 🌐 Public Hostinger VPS Hosting (`calle.fyro.cloud`)
+
+The platform includes automated deployment configurations and scripts for hosting on a **Hostinger VPS** with SSL under `calle.fyro.cloud` (or any subdomain of `fyro.cloud`):
+- **Live Mission Control Portal**: Executive operations dashboard with real-time KPI tracking.
+- **Workflow Trigger Center**: Single-click dispatch of live phone calls via CALL-E or instant simulation, plus batch verification runner across supplier categories.
+- **Automated Deployment**: Ready-to-run 1-command installer script in [`deploy/deploy_hostinger.sh`](deploy/deploy_hostinger.sh) and Docker Compose setup.
+- **Full Architecture Plan**: Detailed deployment guide and DNS configuration in [`docs/HOSTINGER_VPS_DEPLOYMENT_PLAN.md`](docs/HOSTINGER_VPS_DEPLOYMENT_PLAN.md).
 
 ---
 
@@ -236,8 +246,19 @@ call-e-hackathon/
 ├── config/
 │   ├── __init__.py
 │   └── settings.py                # Environment configuration loader
+├── deploy/                        # Production deployment configuration for Hostinger VPS
+│   ├── Dockerfile                 # Multi-stage production container build
+│   ├── docker-compose.yml         # Container orchestration
+│   ├── calle.service              # Systemd unit service configuration
+│   ├── deploy_hostinger.sh        # 1-command automated VPS deploy script
+│   ├── .env.production.example    # Production environment variable template
+│   └── nginx/
+│       └── calle.fyro.cloud.conf  # Nginx reverse proxy & Let's Encrypt SSL config
 ├── docs/
-│   └── CALL_E_CREDITS_BLURB.md    # Official 2-3 sentence blurb for additional CALL-E credits
+│   ├── CALL_E_CREDITS_BLURB.md    # Official 2-3 sentence blurb for additional CALL-E credits
+│   ├── DEVPOST_SUBMISSION.md      # Authoritative copy-paste text for Devpost submission
+│   └── HOSTINGER_VPS_DEPLOYMENT_PLAN.md # Full VPS architecture & workflow plan
+
 ├── prompts/
 │   ├── __init__.py
 │   ├── supplier_agent_prompt.py   # 5-step conversation flow & system instructions

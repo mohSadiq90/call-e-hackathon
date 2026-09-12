@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  calle-dashboard:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: calle-supply-chain-dashboard
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      - CALLE_API_KEY=${CALLE_API_KEY:-}
+      - ENVIRONMENT=production
+      - LOG_LEVEL=info
+    volumes:
+      - ../output:/app/output
+      - ../data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
