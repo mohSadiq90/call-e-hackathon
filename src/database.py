@@ -77,7 +77,10 @@ class ProcurementDatabase:
             cursor.execute("PRAGMA table_info(call_records);")
             columns = [row["name"] for row in cursor.fetchall()]
             if "recording_url" not in columns:
-                cursor.execute("ALTER TABLE call_records ADD COLUMN recording_url TEXT DEFAULT NULL;")
+                try:
+                    cursor.execute("ALTER TABLE call_records ADD COLUMN recording_url TEXT DEFAULT NULL;")
+                except sqlite3.OperationalError:
+                    pass  # Concurrent worker already added column
 
             # 2. Suppliers table
             cursor.execute("""
