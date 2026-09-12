@@ -75,6 +75,7 @@ class CallResult(BaseModel):
     call_duration_seconds: int = 0
     timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     raw_transcript: str = ""
+    recording_url: Optional[str] = None
 
 
 class BatchProcurementReport(BaseModel):

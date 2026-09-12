@@ -173,6 +173,47 @@ class TestHtmlDashboard(unittest.TestCase):
             self.assertIn("rep_test_123", content)
             self.assertGreater(len(content), 1000)
 
+    def test_audio_player_html_components(self):
+        """Validates that HTML5 audio player and live telephony recording controls are rendered."""
+        html = render_html_dashboard(self.report)
+
+        self.assertIn('id="modal-audio-element"', html)
+        self.assertIn('id="modal-audio-badge"', html)
+        self.assertIn('id="modal-audio-direct-link"', html)
+        self.assertIn('seekAudioFromClick', html)
+        self.assertIn('currentCallRecordingUrl', html)
+        self.assertIn('updateAudioProgressUI', html)
+
+    def test_html_dashboard_preserves_recording_url_in_data(self):
+        """Validates that calls with recording_url are serialized into embedded dashboard JSON."""
+        call_with_rec = CallResult(
+            call_id="call_real_embedded",
+            order_id="PO-REAL-999",
+            supplier_name="Verified Audio Supplier",
+            contact_name="Dave Smith",
+            phone_number="+1-563-281-3105",
+            call_status="COMPLETED",
+            fulfillment_status=FulfillmentStatus.DELAYED,
+            original_delivery_date="2026-09-15",
+            revised_delivery_date="2026-09-22",
+            delay_days=7,
+            recording_url="/api/calls/call_real_embedded/audio",
+        )
+        report = BatchProcurementReport(
+            report_id="rep_rec_test",
+            total_orders_checked=1,
+            on_time_count=0,
+            delayed_count=1,
+            unreachable_count=0,
+            on_time_percentage=0.0,
+            total_financial_risk_usd=10500.0,
+            critical_escalations=[call_with_rec],
+            call_records=[call_with_rec],
+        )
+        html = render_html_dashboard(report)
+        self.assertIn("/api/calls/call_real_embedded/audio", html)
+        self.assertIn("call_real_embedded", html)
+
 
 if __name__ == "__main__":
     unittest.main()

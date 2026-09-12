@@ -161,6 +161,40 @@ class TestServerAPI(unittest.TestCase):
         self.assertIn("purchase_orders", data["tables"])
         self.assertGreaterEqual(data["total_calls"], 1)
 
+    def test_verified_real_call_loaded(self):
+        """Verified real call (call_BX2osyVHhnrQgDngurhn8w) must be loaded with recording_url."""
+        resp = self.client.get("/api/calls/call_BX2osyVHhnrQgDngurhn8w")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data["call_id"], "call_BX2osyVHhnrQgDngurhn8w")
+        self.assertEqual(data["order_id"], "PO-88219")
+        self.assertIsNotNone(data.get("recording_url"))
+        self.assertIn("/audio", data["recording_url"])
+
+    def test_get_call_audio(self):
+        """GET /api/calls/{call_id}/audio should serve playable telephony audio."""
+        resp = self.client.get("/api/calls/call_BX2osyVHhnrQgDngurhn8w/audio")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("audio/", resp.headers["content-type"])
+        self.assertGreater(len(resp.content), 1000)
+
+    def test_get_call_recording_meta(self):
+        """GET /api/calls/{call_id}/recording should return recording status and URL."""
+        resp = self.client.get("/api/calls/call_BX2osyVHhnrQgDngurhn8w/recording")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data["call_id"], "call_BX2osyVHhnrQgDngurhn8w")
+        self.assertTrue(data["has_recording"])
+        self.assertIsNotNone(data["recording_url"])
+
+    def test_api_calls_recording_only_filter(self):
+        """GET /api/calls?recording_only=true should return only calls with audio recording."""
+        resp = self.client.get("/api/calls?recording_only=true")
+        self.assertEqual(resp.status_code, 200)
+        calls = resp.json()
+        self.assertGreaterEqual(len(calls), 1)
+        self.assertTrue(all(bool(c.get("recording_url")) for c in calls))
+
 
 if __name__ == "__main__":
     unittest.main()

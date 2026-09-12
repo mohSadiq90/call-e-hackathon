@@ -227,6 +227,80 @@ class TestProcurementDatabaseUnit(unittest.TestCase):
         self.db.clear_all_calls()
         self.assertEqual(self.db.count_calls(), 0)
 
+    def test_recording_url_persistence(self):
+        """Call results with recording_url should persist and reload properly."""
+        sample = self._create_sample_call(call_id="CALL-REC-001")
+        sample.recording_url = "/api/calls/CALL-REC-001/audio"
+        self.db.upsert_call_result(sample)
+
+        loaded = self.db.get_call_by_id("CALL-REC-001")
+        self.assertIsNotNone(loaded)
+        self.assertEqual(loaded.recording_url, "/api/calls/CALL-REC-001/audio")
+
+        # Update recording_url
+        sample.recording_url = "https://api.heycall-e.com/v1/calls/call_test/recording"
+        self.db.upsert_call_result(sample)
+        reloaded = self.db.get_call_by_id("CALL-REC-001")
+        self.assertEqual(reloaded.recording_url, "https://api.heycall-e.com/v1/calls/call_test/recording")
+
+    def test_recording_only_filtering(self):
+        """list_calls with recording_only=True should filter out records without audio."""
+        c1 = self._create_sample_call(call_id="CALL-WITH-REC")
+        c1.recording_url = "/api/calls/CALL-WITH-REC/audio"
+
+        c2 = self._create_sample_call(call_id="CALL-WITHOUT-REC")
+        c2.recording_url = None
+
+        self.db.upsert_call_result(c1)
+        self.db.upsert_call_result(c2)
+
+        all_calls = self.db.list_calls()
+        self.assertEqual(len(all_calls), 2)
+
+        rec_calls = self.db.list_calls(recording_only=True)
+        self.assertEqual(len(rec_calls), 1)
+        self.assertEqual(rec_calls[0].call_id, "CALL-WITH-REC")
+
+    def test_database_migration_adds_recording_url(self):
+        """Existing legacy database without recording_url column should auto-migrate."""
+        import sqlite3
+        legacy_db_path = Path(self.temp_dir.name) / "legacy_v1.db"
+        with sqlite3.connect(str(legacy_db_path)) as conn:
+            conn.execute("""
+                CREATE TABLE call_records (
+                    call_id TEXT PRIMARY KEY,
+                    order_id TEXT NOT NULL,
+                    supplier_name TEXT NOT NULL,
+                    contact_name TEXT NOT NULL,
+                    phone_number TEXT NOT NULL,
+                    call_status TEXT NOT NULL,
+                    fulfillment_status TEXT NOT NULL,
+                    original_delivery_date TEXT NOT NULL,
+                    revised_delivery_date TEXT,
+                    delay_days INTEGER DEFAULT 0,
+                    delay_category TEXT DEFAULT 'NONE',
+                    delay_notes TEXT,
+                    expedited_freight_cost_usd REAL DEFAULT 0.0,
+                    estimated_financial_impact_usd REAL DEFAULT 0.0,
+                    escalation_contact_name TEXT,
+                    escalation_contact_phone TEXT,
+                    escalation_required INTEGER DEFAULT 0,
+                    call_duration_seconds INTEGER DEFAULT 0,
+                    timestamp TEXT NOT NULL,
+                    raw_transcript TEXT DEFAULT '',
+                    data_json TEXT NOT NULL
+                );
+            """)
+            conn.commit()
+
+        # Connect with ProcurementDatabase, should trigger migration without error
+        migrated_db = ProcurementDatabase(db_path=legacy_db_path)
+        with migrated_db._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("PRAGMA table_info(call_records);")
+            col_names = [r["name"] for r in cursor.fetchall()]
+            self.assertIn("recording_url", col_names)
+
 
 class TestDatabaseServerIntegration(unittest.TestCase):
     """Integration tests verifying server state synchronization with SQLite."""

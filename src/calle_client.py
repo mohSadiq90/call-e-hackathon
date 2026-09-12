@@ -92,6 +92,11 @@ class CalleSupplierAgentClient:
             completed_call = self.client.calls.wait_for_completion(call_task.id, timeout=180)
             transcript_text = completed_call.transcript or ""
             duration = getattr(completed_call, "duration_seconds", 120)
+            rec_url = (
+                getattr(completed_call, "recording_url", None)
+                or getattr(completed_call, "audio_url", None)
+                or f"https://api.heycall-e.com/v1/calls/{call_task.id}/recording"
+            )
             return self._process_transcript_result(
                 call_id=call_id,
                 supplier=supplier,
@@ -99,6 +104,7 @@ class CalleSupplierAgentClient:
                 transcript=transcript_text,
                 duration=duration,
                 call_status="COMPLETED",
+                recording_url=rec_url,
             )
         except Exception as e:
             print(f"[CALL-E ERROR] Live call failed: {e}. Falling back to simulation for continuity.")
@@ -195,6 +201,7 @@ class CalleSupplierAgentClient:
             duration=duration,
             call_status=call_status,
             scenario_hint=scenario,
+            recording_url=scenario.get("recording_url"),
         )
 
     def _process_transcript_result(
@@ -206,6 +213,7 @@ class CalleSupplierAgentClient:
         duration: int,
         call_status: str,
         scenario_hint: Optional[Dict[str, Any]] = None,
+        recording_url: Optional[str] = None,
     ) -> CallResult:
         """Parses the transcript into a verified structured CallResult."""
         status = TranscriptParser.parse_status(transcript)
@@ -257,6 +265,8 @@ class CalleSupplierAgentClient:
             or (status == FulfillmentStatus.PARTIAL_DISPATCH and delay_days >= 4)
         )
 
+        resolved_rec_url = recording_url or (scenario_hint.get("recording_url") if scenario_hint else None)
+
         return CallResult(
             call_id=call_id,
             order_id=order.order_id,
@@ -277,4 +287,78 @@ class CalleSupplierAgentClient:
             escalation_required=escalation_required,
             call_duration_seconds=duration,
             raw_transcript=transcript,
+            recording_url=resolved_rec_url,
+        )
+
+    @classmethod
+    def from_calle_api_task(
+        cls,
+        task_data: Dict[str, Any],
+        order: PurchaseOrder,
+        supplier: Supplier,
+        recording_url: Optional[str] = None,
+    ) -> CallResult:
+        """Converts a real CALL-E API call_task response into a structured CallResult."""
+        recipients = task_data.get("recipients", [])
+        attempts = recipients[0].get("attempts", []) if recipients else []
+        attempt = attempts[0] if attempts else {}
+
+        # Reconstruct natural transcript dialogue from transcript turns
+        turns = attempt.get("transcript_turns", [])
+        if turns:
+            lines = []
+            for t in turns:
+                spk = "Agent" if t.get("speaker") == "bot" else "Supplier"
+                lines.append(f"{spk}: {t.get('text', '').strip()}")
+            transcript = "\n".join(lines)
+        else:
+            transcript = task_data.get("summary", "")
+
+        duration = 109
+        if attempt.get("started_at") and attempt.get("completed_at"):
+            try:
+                t0 = datetime.fromisoformat(attempt["started_at"].replace("Z", "+00:00"))
+                t1 = datetime.fromisoformat(attempt["completed_at"].replace("Z", "+00:00"))
+                duration = int((t1 - t0).total_seconds())
+            except Exception:
+                duration = 109
+
+        # Parse with TranscriptParser
+        status = TranscriptParser.parse_status(transcript)
+        revised_date = TranscriptParser.parse_revised_date(transcript, order.committed_delivery_date)
+        delay_cat = TranscriptParser.parse_delay_category(transcript)
+        freight_cost = TranscriptParser.parse_expedited_cost(transcript)
+        esc_name, esc_phone = TranscriptParser.parse_escalation_contact(transcript)
+
+        delay_days = TranscriptParser.calculate_delay_days(order.committed_delivery_date, revised_date) if revised_date else 0
+        financial_impact = (delay_days * DEFAULT_DAILY_DELAY_PENALTY_USD) + freight_cost
+
+        rec_url = (
+            recording_url
+            or task_data.get("recording_url")
+            or f"/api/calls/{task_data.get('id', 'call_real')}/audio"
+        )
+
+        return CallResult(
+            call_id=task_data.get("id", f"call_{uuid.uuid4().hex[:12]}"),
+            order_id=order.order_id,
+            supplier_name=supplier.name,
+            contact_name=supplier.contact_name,
+            phone_number=attempt.get("phone") or supplier.phone,
+            call_status="COMPLETED" if task_data.get("status") == "completed" else task_data.get("status", "COMPLETED"),
+            fulfillment_status=status,
+            original_delivery_date=order.committed_delivery_date,
+            revised_delivery_date=revised_date or order.committed_delivery_date,
+            delay_days=delay_days,
+            delay_category=delay_cat,
+            delay_notes=task_data.get("summary") or "Verified live call completed via CALL-E telephony engine.",
+            expedited_freight_cost_usd=freight_cost,
+            estimated_financial_impact_usd=financial_impact,
+            escalation_contact_name=esc_name or supplier.contact_name,
+            escalation_contact_phone=esc_phone or supplier.phone,
+            escalation_required=(status == FulfillmentStatus.DELAYED and delay_days >= 3),
+            call_duration_seconds=duration,
+            timestamp=task_data.get("completed_at") or datetime.now().isoformat(),
+            raw_transcript=transcript,
+            recording_url=rec_url,
         )

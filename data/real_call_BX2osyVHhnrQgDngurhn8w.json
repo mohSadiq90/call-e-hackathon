@@ -1,0 +1,172 @@
+{
+  "id": "call_BX2osyVHhnrQgDngurhn8w",
+  "object": "call_task",
+  "status": "completed",
+  "task": "You are Alex, calling from Enterprise Logistics Procurement Operations on a recorded line regarding Purchase Order PO-88219 for 5,000 Microcontroller Units. Verify if the shipment is on schedule for delivery by September 15. If the contact confirms it is on schedule, thank them and conclude the call. If they state there is a delay, politely ask for the root cause and the realistic revised delivery date, inquire whether expedited freight is available, and thank them before closing.",
+  "recipients": [
+    {
+      "id": "rcp_8b8db422241b3528",
+      "phones": [
+        "+15632813105"
+      ],
+      "locale": null,
+      "region": null,
+      "status": "completed",
+      "structured_result": null,
+      "summary": "The call completed successfully. The contact confirmed the shipment is delayed, provided the cause and revised delivery date, and gave expedited freight information.",
+      "attempts": [
+        {
+          "id": "att_e6cb239306545e35",
+          "phone": "+15632813105",
+          "status": "completed",
+          "started_at": "2026-09-11T04:01:23.557096Z",
+          "completed_at": "2026-09-11T04:03:12.712664Z",
+          "summary": "The call completed successfully. The contact confirmed the shipment is delayed, provided the cause and revised delivery date, and gave expedited freight information.",
+          "transcript_turns": [
+            {
+              "offset_seconds": 0,
+              "speaker": "bot",
+              "text": "Hi, this is Alex,"
+            },
+            {
+              "offset_seconds": 1,
+              "speaker": "bot",
+              "text": "calling from Enterprise Logistics Procurement Operations on a recorded line."
+            },
+            {
+              "offset_seconds": 10,
+              "speaker": "user",
+              "text": "Hello?"
+            },
+            {
+              "offset_seconds": 11,
+              "speaker": "user",
+              "text": "Hello? Hi, Dave."
+            },
+            {
+              "offset_seconds": 12,
+              "speaker": "bot",
+              "text": "Hi,"
+            },
+            {
+              "offset_seconds": 13,
+              "speaker": "bot",
+              "text": "I'm calling about purchase order capitalized P, capitalized O, dash,"
+            },
+            {
+              "offset_seconds": 18,
+              "speaker": "bot",
+              "text": "eight, eight, two, one, nine for five thousand Microcontroller Units;"
+            },
+            {
+              "offset_seconds": 22,
+              "speaker": "bot",
+              "text": "can you confirm whether the shipment is on schedule for delivery by September fifteenth?"
+            },
+            {
+              "offset_seconds": 32,
+              "speaker": "bot",
+              "text": "Can you hear me?"
+            },
+            {
+              "offset_seconds": 37,
+              "speaker": "user",
+              "text": "Yes. Yeah. I can hear you. Just a 2nd."
+            },
+            {
+              "offset_seconds": 38,
+              "speaker": "bot",
+              "text": "Okay."
+            },
+            {
+              "offset_seconds": 44,
+              "speaker": "bot",
+              "text": "I'll hold."
+            },
+            {
+              "offset_seconds": 51,
+              "speaker": "user",
+              "text": "Yeah. So, unfortunately, no. We are facing a delay."
+            },
+            {
+              "offset_seconds": 53,
+              "speaker": "bot",
+              "text": "I see."
+            },
+            {
+              "offset_seconds": 54,
+              "speaker": "bot",
+              "text": "Can you tell me what's causing the delay, and when do you realistically expect the shipment to arrive?"
+            },
+            {
+              "offset_seconds": 64,
+              "speaker": "user",
+              "text": "We had a raw material shortage. From our silicon chip supplier."
+            },
+            {
+              "offset_seconds": 65,
+              "speaker": "bot",
+              "text": "Understood."
+            },
+            {
+              "offset_seconds": 66,
+              "speaker": "bot",
+              "text": "So, do you have a realistic revised delivery date for those five thousand units?"
+            },
+            {
+              "offset_seconds": 83,
+              "speaker": "user",
+              "text": "Our guaranteed revised delivery date is September 22, and we can ship a partial batch of 2,000 units by the original date."
+            },
+            {
+              "offset_seconds": 84,
+              "speaker": "bot",
+              "text": "Got it."
+            },
+            {
+              "offset_seconds": 85,
+              "speaker": "bot",
+              "text": "Is expedited freight an option for the shipment?"
+            },
+            {
+              "offset_seconds": 101,
+              "speaker": "user",
+              "text": "Expedited freight will cost $1,200. The supervisor is John Doe at"
+            },
+            {
+              "offset_seconds": 102,
+              "speaker": "bot",
+              "text": "Thank you, bye."
+            },
+            {
+              "offset_seconds": 106,
+              "speaker": "user",
+              "text": "Thank you."
+            }
+          ],
+          "provider_call_id": "2d1735d56ba84f949759bb7bad4b7e17",
+          "failure_code": null,
+          "failure_message": null
+        }
+      ]
+    }
+  ],
+  "structured_result": null,
+  "summary": "The call completed successfully. The contact confirmed the shipment is delayed, provided the cause and revised delivery date, and gave expedited freight information.",
+  "task_completed": true,
+  "completion_confidence": {
+    "score": 0.92,
+    "label": "high"
+  },
+  "evidence": [
+    "The contact said the shipment is not on schedule for September 15.",
+    "They attributed the delay to a raw material shortage from the chip supplier.",
+    "They provided a guaranteed revised delivery date of September 22 and said expedited freight would cost $1,200."
+  ],
+  "metadata": {},
+  "failure_code": null,
+  "failure_message": null,
+  "created_at": "2026-09-11T04:00:18.489442Z",
+  "completed_at": "2026-09-11T04:03:33.382500Z",
+  "recording_url": "/api/calls/call_BX2osyVHhnrQgDngurhn8w/audio"
+}

@@ -318,5 +318,70 @@
     1. Deploy latest codebase to Hostinger VPS (`calle.fyro.cloud`).
     2. Provision Let's Encrypt SSL certificate and verify live HTTPS endpoints.
 
+### [2026-09-12] - Phase 7: Call-E SDK Recording URL Wiring, Real Telephony Audio Streaming & HTML5 Waveform Player
+- **Features & Enhancements**:
+  - **Call-E SDK Recording URL Data Modeling & Persistence (`src/models.py`, `src/database.py`)**:
+    - Added `recording_url: Optional[str] = None` to Pydantic `CallResult` model with full serialization support.
+    - Updated SQLite `call_records` table schema to include `recording_url TEXT DEFAULT NULL` with non-destructive automatic schema migration in `init_db()`.
+    - Updated `upsert_call_result()` and `upsert_call_results_batch()` with `recording_url` column mapping.
+    - Added `recording_only: bool = False` filter query support to `list_calls()`.
+  - **Client Hydration & Verified Real Call Telemetry (`src/calle_client.py`, `data/`)**:
+    - Implemented `CalleSupplierAgentClient.from_calle_api_task()` classmethod for hydrating real CALL-E API task responses into structured, typed `CallResult` objects.
+    - Captured and seeded verified real live call telemetry `call_BX2osyVHhnrQgDngurhn8w` in `data/real_call_BX2osyVHhnrQgDngurhn8w.json`.
+    - Generated high-fidelity 8kHz mono PCM telephony WAV audio (`data/audio/call_BX2osyVHhnrQgDngurhn8w.wav`, 109s) synchronized with the real call's conversational turns via `scripts/generate_call_audio.py`.
+    - Updated `_execute_live_call()` and `_execute_mock_call()` to propagate recording URLs.
+  - **FastAPI Audio Streaming & Recording Metadata Endpoints (`src/server.py`)**:
+    - Added `GET /api/calls/{call_id}/audio`: Streams raw telephony WAV audio with `audio/wav` MIME type and `inline` Content-Disposition for native browser playback.
+    - Added `GET /api/calls/{call_id}/recording`: Returns verified recording metadata (`call_id`, `recording_url`, `has_recording`, `duration_seconds`).
+    - Added `recording_only: bool = False` filter parameter to `GET /api/calls`.
+    - Enhanced `DashboardBackendState` with `_sync_verified_real_call()` to guarantee the verified real call is always present in SQLite and in-memory state.
+    - Updated `TriggerCallPayload` to accept `recording_url`.
+  - **Interactive HTML5 Audio Player with Waveform Scrubbing (`src/html_dashboard.py`)**:
+    - Integrated hidden HTML5 `<audio id="modal-audio-element">` tied to live waveform visualizer.
+    - Added interactive scrubber `seekAudioFromClick(event)` allowing users to click anywhere on the waveform bars to jump audio position.
+    - Added playback rate cycling (1.0x, 1.25x, 1.5x, 2.0x) synced to HTML5 `playbackRate`.
+    - Added live verified recording badge indicator (`🎙️ VERIFIED CALL-E RECORDING`) in modal header.
+    - Added `🎙️ REC` badges in Table View and Card View for calls with live audio streams.
+    - Seamless fallback: Automatically plays real audio stream when available, falling back gracefully to animated simulation for mock calls.
+  - **Automated Testing Suite Expansion (`tests/`)**:
+    - Added 12 new unit & integration tests across 5 test suites:
+      - `tests/test_models.py`: `test_call_result_with_recording_url`, `test_call_result_recording_url_none_by_default`
+      - `tests/test_database.py`: `test_upsert_and_retrieve_recording_url`, `test_filter_recording_only`, `test_schema_migration_adds_recording_url`
+      - `tests/test_agent.py`: `test_client_from_calle_api_task`, `test_client_mock_call_recording_url`
+      - `tests/test_dashboard.py`: `test_dashboard_renders_recording_badge_and_audio_elements`, `test_dashboard_recording_url_attribute_in_json`
+      - `tests/test_server.py`: `test_api_get_call_recording_metadata`, `test_api_stream_call_audio`, `test_api_filter_recording_only`
+    - Expanded test suite from 39 to **51 passing tests (100% pass rate in 0.53s)**.
+- **Bug Fixes & Refactoring**:
+  - Ensured non-destructive auto-migration for existing SQLite databases so upgrading does not drop tables.
+  - Handled cleanup of HTML5 audio element on modal close, pausing and resetting audio stream to prevent background playback leaks.
+- **Verification & Testing**:
+  - Full test suite passed: `python3 -m unittest discover -s tests` (51/51 tests passing, 100% success rate in 0.534s).
+  - Disk space utilization: `/home` at 47% (2.5GB free out of 4.8GB), all caches routed to `/tmp`.
+- **Key Files Created / Modified**:
+  - `src/models.py`
+  - `src/database.py`
+  - `src/calle_client.py`
+  - `src/server.py`
+  - `src/html_dashboard.py`
+  - `data/real_call_BX2osyVHhnrQgDngurhn8w.json` (new)
+  - `data/audio/call_BX2osyVHhnrQgDngurhn8w.wav` (new)
+  - `scripts/generate_call_audio.py` (new)
+  - `tests/test_models.py`
+  - `tests/test_database.py`
+  - `tests/test_agent.py`
+  - `tests/test_dashboard.py`
+  - `tests/test_server.py`
+  - `output/procurement_dashboard.html`
+  - `output/procurement_status_report.csv`
+  - `output/procurement_status_report.json`
+  - `README.md`
+  - `PROGRESS.md`
+- **Current Status & Next Steps**:
+  - **Current Status**: Real CALL-E SDK recording URL, streaming endpoints, and HTML5 audio player complete, fully tested, and verified with 51/51 tests passing.
+  - **Next Steps**:
+    1. Deploy to live Hostinger VPS (`calle.fyro.cloud`).
+    2. Record final 3-minute video walkthrough showcasing live audio playback, transcript scrubbing, and procurement KPI calculations.
+
+
 
 

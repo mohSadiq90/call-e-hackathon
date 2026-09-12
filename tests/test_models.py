@@ -57,6 +57,32 @@ class TestModels(unittest.TestCase):
         self.assertEqual(cr.fulfillment_status, FulfillmentStatus.DELAYED)
         self.assertTrue(cr.escalation_required)
         self.assertEqual(cr.delay_days, 5)
+        self.assertIsNone(cr.recording_url)
+
+    def test_call_result_with_recording_url(self):
+        cr = CallResult(
+            call_id="call_real_123",
+            order_id="PO-88219",
+            supplier_name="MicroSilicon Global Corp",
+            contact_name="Dave Smith",
+            phone_number="+1-563-281-3105",
+            call_status="COMPLETED",
+            fulfillment_status=FulfillmentStatus.DELAYED,
+            original_delivery_date="2026-09-15",
+            revised_delivery_date="2026-09-22",
+            delay_days=7,
+            delay_category=DelayReasonCategory.RAW_MATERIAL_SHORTAGE,
+            expedited_freight_cost_usd=1200.0,
+            estimated_financial_impact_usd=11700.0,
+            escalation_required=True,
+            recording_url="/api/calls/call_real_123/audio",
+        )
+        self.assertEqual(cr.recording_url, "/api/calls/call_real_123/audio")
+        data = cr.model_dump()
+        self.assertEqual(data["recording_url"], "/api/calls/call_real_123/audio")
+        # Roundtrip deserialization
+        hydrated = CallResult(**data)
+        self.assertEqual(hydrated.recording_url, "/api/calls/call_real_123/audio")
 
 
 if __name__ == "__main__":

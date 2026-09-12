@@ -67,9 +67,16 @@ class ProcurementDatabase:
                     call_duration_seconds INTEGER DEFAULT 0,
                     timestamp TEXT NOT NULL,
                     raw_transcript TEXT DEFAULT '',
+                    recording_url TEXT DEFAULT NULL,
                     data_json TEXT NOT NULL
                 );
             """)
+
+            # Migration check: ensure recording_url column exists in existing SQLite databases
+            cursor.execute("PRAGMA table_info(call_records);")
+            columns = [row["name"] for row in cursor.fetchall()]
+            if "recording_url" not in columns:
+                cursor.execute("ALTER TABLE call_records ADD COLUMN recording_url TEXT DEFAULT NULL;")
 
             # 2. Suppliers table
             cursor.execute("""
@@ -128,8 +135,8 @@ class ProcurementDatabase:
                     revised_delivery_date, delay_days, delay_category, delay_notes,
                     expedited_freight_cost_usd, estimated_financial_impact_usd,
                     escalation_contact_name, escalation_contact_phone, escalation_required,
-                    call_duration_seconds, timestamp, raw_transcript, data_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    call_duration_seconds, timestamp, raw_transcript, recording_url, data_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(call_id) DO UPDATE SET
                     order_id = excluded.order_id,
                     supplier_name = excluded.supplier_name,
@@ -150,6 +157,7 @@ class ProcurementDatabase:
                     call_duration_seconds = excluded.call_duration_seconds,
                     timestamp = excluded.timestamp,
                     raw_transcript = excluded.raw_transcript,
+                    recording_url = excluded.recording_url,
                     data_json = excluded.data_json;
             """, (
                 call.call_id,
@@ -172,6 +180,7 @@ class ProcurementDatabase:
                 call.call_duration_seconds,
                 call.timestamp,
                 call.raw_transcript,
+                call.recording_url,
                 data_json,
             ))
             conn.commit()
@@ -206,6 +215,7 @@ class ProcurementDatabase:
                     call.call_duration_seconds,
                     call.timestamp,
                     call.raw_transcript,
+                    call.recording_url,
                     data_json,
                 ))
 
@@ -216,8 +226,8 @@ class ProcurementDatabase:
                     revised_delivery_date, delay_days, delay_category, delay_notes,
                     expedited_freight_cost_usd, estimated_financial_impact_usd,
                     escalation_contact_name, escalation_contact_phone, escalation_required,
-                    call_duration_seconds, timestamp, raw_transcript, data_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    call_duration_seconds, timestamp, raw_transcript, recording_url, data_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(call_id) DO UPDATE SET
                     order_id = excluded.order_id,
                     supplier_name = excluded.supplier_name,
@@ -238,6 +248,7 @@ class ProcurementDatabase:
                     call_duration_seconds = excluded.call_duration_seconds,
                     timestamp = excluded.timestamp,
                     raw_transcript = excluded.raw_transcript,
+                    recording_url = excluded.recording_url,
                     data_json = excluded.data_json;
             """, rows)
             conn.commit()
@@ -270,6 +281,7 @@ class ProcurementDatabase:
                 call_duration_seconds=row["call_duration_seconds"],
                 timestamp=row["timestamp"],
                 raw_transcript=row["raw_transcript"],
+                recording_url=row["recording_url"] if "recording_url" in row.keys() else None,
             )
 
     def get_call_by_id(self, call_id: str) -> Optional[CallResult]:
@@ -293,6 +305,7 @@ class ProcurementDatabase:
         status: Optional[str] = None,
         category: Optional[str] = None,
         escalation_only: bool = False,
+        recording_only: bool = False,
         search: Optional[str] = None,
         limit: Optional[int] = None,
         offset: int = 0,
@@ -311,6 +324,9 @@ class ProcurementDatabase:
 
         if escalation_only:
             query += " AND escalation_required = 1"
+
+        if recording_only:
+            query += " AND recording_url IS NOT NULL AND recording_url != ''"
 
         if search:
             query += """ AND (

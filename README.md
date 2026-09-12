@@ -2,7 +2,7 @@
 
 [![Python 3.12](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests: Passing](https://img.shields.io/badge/Tests-39%2F39%20Passing-brightgreen.svg)]()
+[![Tests: Passing](https://img.shields.io/badge/Tests-51%2F51%20Passing-brightgreen.svg)]()
 [![CALL-E SDK](https://img.shields.io/badge/Telephony-CALL--E%20SDK-purple.svg)](https://calle.ai)
 
 > **Autonomous phone agent that dials suppliers to verify purchase order fulfillment by deadline, captures delay root causes, estimates financial risk, and outputs structured intelligence directly into procurement dashboards.**
@@ -144,9 +144,10 @@ The CALL-E Supply Chain Intelligence platform includes an enterprise operations 
 4. **Dual Display Modalities**:
    - **Data Table View**: High-density operational table with status badges and risk calculations.
    - **Cards Grid View**: Card-based visual overview.
-5. **Call Inspection & Audio Player Modal**:
+5. **Call Inspection & Real Telephony Audio Player Modal**:
    - Full conversational transcript bubble visualization.
-   - CALL-E simulated HD voice audio player with animated equalizer waveform, speed adjustments (1.0x, 1.5x, 2.0x), and restart controls.
+   - HTML5 `<audio>` player with live waveform scrubbing, variable playback rates (1.0x, 1.25x, 1.5x, 2.0x), and live verified recording badges.
+   - High-fidelity fallback audio simulation for offline and mock demonstration records.
    - Direct escalation contact card with clickable phone and email.
 6. **On-Demand Outbound Call Trigger**:
    - Trigger new autonomous verification calls directly from the browser UI or REST API.
@@ -159,11 +160,14 @@ The CALL-E Supply Chain Intelligence platform includes an enterprise operations 
 | `GET` | `/` | Serves the interactive executive HTML operations dashboard |
 | `GET` | `/health`, `/api/health` | Health check endpoint returning loaded call count |
 | `GET` | `/api/summary` | Executive KPI aggregates and procurement status report |
-| `GET` | `/api/calls` | Query call records with filters (`?status=`, `?category=`, `?escalation_only=`, `?search=`) |
+| `GET` | `/api/calls` | Query call records with filters (`?status=`, `?category=`, `?escalation_only=`, `?search=`, `?recording_only=`) |
 | `GET` | `/api/calls/{call_id}` | Detailed call record with conversational transcript |
+| `GET` | `/api/calls/{call_id}/audio` | Stream telephony call audio (WAV) directly for in-browser playback |
+| `GET` | `/api/calls/{call_id}/recording` | Retrieve CALL-E recording metadata and stream link |
 | `POST` | `/api/calls/trigger` | Trigger outbound verification call (live or simulated) |
 | `GET` | `/api/export/csv` | Stream latest ERP-ready CSV report |
 | `GET` | `/api/export/json` | Stream latest machine-readable JSON report |
+| `GET` | `/api/db/stats` | Real-time SQLite storage statistics and record counts |
 | `POST` | `/api/reload` | Recompute or switch dataset on demand |
 
 ---
@@ -216,7 +220,7 @@ python3 -m unittest discover -s tests
 
 Output:
 ```text
-Ran 39 tests in 0.350s
+Ran 51 tests in 0.534s
 
 OK
 ```

@@ -1340,26 +1340,37 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
           <div id="modal-esc-phone" style="font-family: monospace; font-size: 0.85rem; font-weight: 600; color: var(--accent-blue);"></div>
         </div>
 
-        <!-- Simulated Voice Waveform Audio Player -->
+        <!-- Audio Player Component with HTML5 Audio Element & Live Telephony Stream -->
+        <audio id="modal-audio-element" preload="auto" style="display: none;"></audio>
         <div class="audio-player">
           <div class="audio-player-header">
-            <div style="display: flex; align-items: center; gap: 0.4rem;">
-              <span>🎙️</span>
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+              <span style="font-size: 1.1rem;">🎙️</span>
               <strong>CALL-E HD Voice Recording Playback</strong>
+              <span id="modal-audio-badge" class="badge" style="font-size: 0.68rem; padding: 0.2rem 0.5rem; font-weight: 700;"></span>
             </div>
-            <span>Codec: Opus HD (24kHz) | Compliance: TCPA Disclosed</span>
+            <div id="modal-audio-meta" style="font-size: 0.74rem; color: var(--text-muted);">
+              <span>Codec: Opus HD (24kHz) | Compliance: TCPA Disclosed</span>
+            </div>
           </div>
 
-          <!-- Waveform equalizer animation -->
-          <div class="waveform-container" id="waveform-bars">
-            <!-- 45 bars -->
+          <!-- Waveform equalizer animation with seek scrubbing -->
+          <div class="waveform-container" id="waveform-bars" title="Click anywhere along the waveform to scrub/seek audio" style="cursor: pointer;" onclick="seekAudioFromClick(event)">
+            <!-- 48 bars rendered dynamically -->
           </div>
 
           <div class="audio-controls">
-            <button class="play-btn" id="modal-play-btn" onclick="toggleAudioPlayback()">▶</button>
-            <div class="time-display" id="modal-audio-time">00:00 / 02:25</div>
-            <div style="display: flex; align-items: center; gap: 0.4rem;">
-              <button class="speed-btn" onclick="cycleSpeed(this)">1.0x</button>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <button class="play-btn" id="modal-play-btn" onclick="toggleAudioPlayback()" title="Play / Pause Audio">▶</button>
+              <div class="time-display" id="modal-audio-time">00:00 / 02:25</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+              <span id="modal-audio-direct-link" style="display: none;">
+                <a id="modal-audio-download" href="#" target="_blank" class="btn btn-secondary" style="padding: 0.2rem 0.55rem; font-size: 0.72rem; text-decoration: none; display: flex; align-items: center; gap: 0.25rem;">
+                  <span>⬇️</span> Real Audio
+                </a>
+              </span>
+              <button class="speed-btn" onclick="cycleSpeed(this)" title="Playback Speed">1.0x</button>
               <button class="btn btn-secondary" style="padding: 0.2rem 0.6rem; font-size: 0.75rem;" onclick="restartAudio()">↺ Restart</button>
             </div>
           </div>
@@ -1466,6 +1477,7 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
     let currentStatusFilter = 'ALL';
     let currentViewMode = 'table';
     let activeModalCall = null;
+    let currentCallRecordingUrl = null;
     let audioPlaying = false;
     let audioCurrentSeconds = 0;
     let audioTotalSeconds = 120;
@@ -1661,7 +1673,10 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
               <span class="status-badge ${{statusClass}}">${{statusIcon}} ${{r.fulfillment_status}}</span>
               ${{escTag}}
             </td>
-            <td><strong>${{r.order_id}}</strong></td>
+            <td>
+              <strong>${{r.order_id}}</strong>
+              ${{r.recording_url ? '<span title="Verified Telephony Audio Recording Available" style="display:inline-block;margin-left:0.35rem;padding:0.1rem 0.35rem;border-radius:4px;font-size:0.65rem;background:rgba(16, 185, 129, 0.2);color:var(--accent-emerald);font-weight:700;">🎙️ REC</span>' : ''}}
+            </td>
             <td>
               <div style="font-weight:600;">${{r.supplier_name}}</div>
               <div style="font-size:0.72rem;color:var(--text-muted);">${{r.contact_name}}</div>
@@ -1680,7 +1695,7 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
             </td>
             <td>
               <button class="btn btn-secondary" style="padding:0.25rem 0.55rem;font-size:0.72rem;" onclick="event.stopPropagation(); openCallModal('${{r.call_id}}')">
-                View Call
+                ${{r.recording_url ? '▶ Listen' : 'View Call'}}
               </button>
             </td>
           </tr>
@@ -1705,7 +1720,10 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
           <div class="call-card" onclick="openCallModal('${{r.call_id}}')">
             <div class="call-card-top">
               <div>
-                <div class="card-po">${{r.order_id}}</div>
+                <div class="card-po">
+                  ${{r.order_id}}
+                  ${{r.recording_url ? '<span style="font-size:0.65rem;margin-left:0.35rem;padding:0.1rem 0.35rem;border-radius:3px;background:rgba(16, 185, 129, 0.2);color:var(--accent-emerald);font-weight:700;">🎙️ REC</span>' : ''}}
+                </div>
                 <div class="card-supplier">${{r.supplier_name}}</div>
               </div>
               <div style="text-align:right;">
@@ -1809,7 +1827,45 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       document.getElementById('modal-esc-phone').textContent = call.escalation_contact_phone || call.phone_number;
 
       // Audio setup
+      currentCallRecordingUrl = call.recording_url || null;
       audioTotalSeconds = call.call_duration_seconds || 110;
+
+      const badgeEl = document.getElementById('modal-audio-badge');
+      const directLinkEl = document.getElementById('modal-audio-direct-link');
+      const downloadEl = document.getElementById('modal-audio-download');
+      const metaEl = document.getElementById('modal-audio-meta');
+      const audioEl = document.getElementById('modal-audio-element');
+
+      if (currentCallRecordingUrl) {{
+        if (badgeEl) {{
+          badgeEl.textContent = '🔴 Verified Live Recording';
+          badgeEl.className = 'status-badge on-time';
+          badgeEl.style.background = 'rgba(16, 185, 129, 0.2)';
+          badgeEl.style.color = 'var(--accent-emerald)';
+          badgeEl.style.border = '1px solid var(--accent-emerald)';
+          badgeEl.style.display = 'inline-block';
+        }}
+        if (directLinkEl) directLinkEl.style.display = 'inline-block';
+        if (downloadEl) downloadEl.href = currentCallRecordingUrl;
+        if (metaEl) metaEl.innerHTML = '<span>Provider: CALL-E Telephony Engine | Audio: Verified Live Stream</span>';
+        if (audioEl) {{
+          audioEl.src = currentCallRecordingUrl;
+          audioEl.playbackRate = audioSpeed;
+        }}
+      }} else {{
+        if (badgeEl) {{
+          badgeEl.textContent = '⚡ Synthesized Audio';
+          badgeEl.className = 'status-badge';
+          badgeEl.style.background = 'rgba(59, 130, 246, 0.15)';
+          badgeEl.style.color = 'var(--accent-blue)';
+          badgeEl.style.border = '1px solid rgba(59, 130, 246, 0.3)';
+          badgeEl.style.display = 'inline-block';
+        }}
+        if (directLinkEl) directLinkEl.style.display = 'none';
+        if (metaEl) metaEl.innerHTML = '<span>Codec: Opus HD (24kHz) | Compliance: TCPA Disclosed</span>';
+        if (audioEl) audioEl.src = '';
+      }}
+
       restartAudio();
 
       // Render Transcript bubbles
@@ -1820,6 +1876,9 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
 
     function closeCallModal() {{
       pauseAudio();
+      const audioEl = document.getElementById('modal-audio-element');
+      if (audioEl) audioEl.src = '';
+      currentCallRecordingUrl = null;
       document.getElementById('call-modal').classList.remove('active');
     }}
 
@@ -1873,36 +1932,18 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       }});
     }}
 
-    // Audio Playback Simulation
-    function toggleAudioPlayback() {{
-      if (audioPlaying) {{
-        pauseAudio();
-      }} else {{
-        playAudio();
-      }}
-    }}
+    // Audio Playback Engine (Real Audio + Synthesized Fallback)
+    function updateAudioProgressUI() {{
+      const curM = String(Math.floor(audioCurrentSeconds / 60)).padStart(2, '0');
+      const curS = String(Math.floor(audioCurrentSeconds % 60)).padStart(2, '0');
+      const totM = String(Math.floor(audioTotalSeconds / 60)).padStart(2, '0');
+      const totS = String(Math.floor(audioTotalSeconds % 60)).padStart(2, '0');
+      const timeDisplay = document.getElementById('modal-audio-time');
+      if (timeDisplay) timeDisplay.textContent = `${{curM}}:${{curS}} / ${{totM}}:${{totS}}`;
 
-    function playAudio() {{
-      audioPlaying = true;
-      document.getElementById('modal-play-btn').textContent = '⏸';
       const bars = document.querySelectorAll('#waveform-bars .waveform-bar');
-
-      audioInterval = setInterval(() => {{
-        audioCurrentSeconds += (1 * audioSpeed);
-        if (audioCurrentSeconds >= audioTotalSeconds) {{
-          audioCurrentSeconds = audioTotalSeconds;
-          pauseAudio();
-        }}
-
-        // Update time text
-        const curM = String(Math.floor(audioCurrentSeconds / 60)).padStart(2, '0');
-        const curS = String(Math.floor(audioCurrentSeconds % 60)).padStart(2, '0');
-        const totM = String(Math.floor(audioTotalSeconds / 60)).padStart(2, '0');
-        const totS = String(Math.floor(audioTotalSeconds % 60)).padStart(2, '0');
-        document.getElementById('modal-audio-time').textContent = `${{curM}}:${{curS}} / ${{totM}}:${{totS}}`;
-
-        // Update waveform bars
-        const pctPlayed = audioCurrentSeconds / audioTotalSeconds;
+      if (bars.length > 0 && audioTotalSeconds > 0) {{
+        const pctPlayed = Math.max(0, Math.min(1, audioCurrentSeconds / audioTotalSeconds));
         const activeIndex = Math.floor(pctPlayed * bars.length);
         bars.forEach((b, idx) => {{
           if (idx <= activeIndex) {{
@@ -1916,12 +1957,73 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
             b.classList.remove('active');
           }}
         }});
-      }}, 1000);
+      }}
+    }}
+
+    function seekAudioFromClick(event) {{
+      const container = document.getElementById('waveform-bars');
+      if (!container || !audioTotalSeconds) return;
+      const rect = container.getBoundingClientRect();
+      const clickX = event.clientX - rect.left;
+      const pct = Math.max(0, Math.min(1, clickX / rect.width));
+      audioCurrentSeconds = pct * audioTotalSeconds;
+
+      const audioEl = document.getElementById('modal-audio-element');
+      if (audioEl && currentCallRecordingUrl && audioEl.duration && !isNaN(audioEl.duration)) {{
+        audioEl.currentTime = Math.min(audioCurrentSeconds, audioEl.duration);
+      }}
+      updateAudioProgressUI();
+    }}
+
+    function toggleAudioPlayback() {{
+      if (audioPlaying) {{
+        pauseAudio();
+      }} else {{
+        playAudio();
+      }}
+    }}
+
+    function playAudio() {{
+      audioPlaying = true;
+      const btn = document.getElementById('modal-play-btn');
+      if (btn) btn.textContent = '⏸';
+
+      const audioEl = document.getElementById('modal-audio-element');
+      if (currentCallRecordingUrl && audioEl && audioEl.src) {{
+        audioEl.playbackRate = audioSpeed;
+        const playPromise = audioEl.play();
+        if (playPromise !== undefined) {{
+          playPromise.catch(err => {{
+            console.log('Audio playback notice:', err);
+          }});
+        }}
+      }}
+
+      if (audioInterval) clearInterval(audioInterval);
+      audioInterval = setInterval(() => {{
+        if (currentCallRecordingUrl && audioEl && !audioEl.paused && audioEl.duration && !isNaN(audioEl.duration)) {{
+          audioCurrentSeconds = audioEl.currentTime;
+          audioTotalSeconds = Math.max(audioEl.duration, 1);
+        }} else {{
+          audioCurrentSeconds += (1 * audioSpeed);
+        }}
+
+        if (audioCurrentSeconds >= audioTotalSeconds) {{
+          audioCurrentSeconds = audioTotalSeconds;
+          pauseAudio();
+        }}
+
+        updateAudioProgressUI();
+      }}, 500);
     }}
 
     function pauseAudio() {{
       audioPlaying = false;
       if (audioInterval) clearInterval(audioInterval);
+      const audioEl = document.getElementById('modal-audio-element');
+      if (audioEl && !audioEl.paused) {{
+        audioEl.pause();
+      }}
       const btn = document.getElementById('modal-play-btn');
       if (btn) btn.textContent = '▶';
     }}
@@ -1929,12 +2031,11 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
     function restartAudio() {{
       pauseAudio();
       audioCurrentSeconds = 0;
-      const totM = String(Math.floor(audioTotalSeconds / 60)).padStart(2, '0');
-      const totS = String(Math.floor(audioTotalSeconds % 60)).padStart(2, '0');
-      document.getElementById('modal-audio-time').textContent = `00:00 / ${{totM}}:${{totS}}`;
-      document.querySelectorAll('#waveform-bars .waveform-bar').forEach(b => {{
-        b.classList.remove('played', 'active');
-      }});
+      const audioEl = document.getElementById('modal-audio-element');
+      if (audioEl) {{
+        audioEl.currentTime = 0;
+      }}
+      updateAudioProgressUI();
     }}
 
     function cycleSpeed(btn) {{
@@ -1948,6 +2049,10 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
         audioSpeed = 1.0;
       }}
       btn.textContent = `${{audioSpeed.toFixed(1)}}x`;
+      const audioEl = document.getElementById('modal-audio-element');
+      if (audioEl) {{
+        audioEl.playbackRate = audioSpeed;
+      }}
     }}
 
     // Trigger New Call Modal

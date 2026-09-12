@@ -91,6 +91,46 @@ class TestAgentPipeline(unittest.TestCase):
         html_path = self.reporter.export_html(report, filename="test_report.html")
         self.assertTrue(html_path.exists())
 
+    def test_mock_call_preserves_recording_url(self):
+        """Mock call should preserve recording_url if supplied in scenario."""
+        scenario = {
+            "status": "ON_TIME",
+            "delay_days": 0,
+            "recording_url": "https://media.call-e.example/audio/rec_123.mp3",
+        }
+        result = self.client.execute_call(
+            supplier=self.test_supplier,
+            order=self.test_order,
+            scenario_override=scenario,
+        )
+        self.assertEqual(result.recording_url, "https://media.call-e.example/audio/rec_123.mp3")
+
+    def test_from_calle_api_task_hydration(self):
+        """from_calle_api_task should accurately hydrate verified real Call-E telemetry."""
+        import json
+        from config.settings import DATA_DIR
+
+        real_call_path = DATA_DIR / "real_call_BX2osyVHhnrQgDngurhn8w.json"
+        self.assertTrue(real_call_path.exists())
+
+        with open(real_call_path, "r", encoding="utf-8") as f:
+            task_payload = json.load(f)
+
+        result = CalleSupplierAgentClient.from_calle_api_task(
+            task_data=task_payload,
+            order=self.test_order,
+            supplier=self.test_supplier,
+            recording_url="/api/calls/call_BX2osyVHhnrQgDngurhn8w/audio",
+        )
+
+        self.assertEqual(result.call_id, "call_BX2osyVHhnrQgDngurhn8w")
+        self.assertEqual(result.fulfillment_status, FulfillmentStatus.DELAYED)
+        self.assertIn("Alex", result.raw_transcript)
+        self.assertIn("Microcontroller", result.raw_transcript)
+        self.assertEqual(result.recording_url, "/api/calls/call_BX2osyVHhnrQgDngurhn8w/audio")
+        self.assertEqual(result.expedited_freight_cost_usd, 1200.0)
+        self.assertGreater(result.call_duration_seconds, 60)
+
 
 if __name__ == "__main__":
     unittest.main()
