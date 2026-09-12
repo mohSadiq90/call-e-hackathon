@@ -42,6 +42,8 @@ sdist/
 
 # Logs & Temporary files
 *.log
+*.db
+*.sqlite3
 /tmp/
 tmp/
 temp/

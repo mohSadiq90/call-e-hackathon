@@ -1,9 +1,9 @@
-# 📞 CALL-E Supply Chain Supplier Status Check Agent
+# 📞 CALL-E Autonomous Supply Chain Telephony Agent 📦📞
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.12](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![CALL-E SDK](https://img.shields.io/badge/CALL--E-SDK%20Integrated-success)](https://github.com/CALLE-AI/server-sdk-python)
-[![Tests: Passing](https://img.shields.io/badge/Tests-15%2F15%20Passing-brightgreen.svg)]()
+[![Tests: Passing](https://img.shields.io/badge/Tests-39%2F39%20Passing-brightgreen.svg)]()
+[![CALL-E SDK](https://img.shields.io/badge/Telephony-CALL--E%20SDK-purple.svg)](https://calle.ai)
 
 > **Autonomous phone agent that dials suppliers to verify purchase order fulfillment by deadline, captures delay root causes, estimates financial risk, and outputs structured intelligence directly into procurement dashboards.**
 
@@ -208,7 +208,7 @@ PO-51980   | Zenith Hydraulics & .. | ⚠️ DELAYED | 2026-09-17 | 2026-09-24 |
 
 ## 🧪 Automated Testing
 
-A comprehensive test suite covers models, transcript parsing, MCP server, HTML dashboard rendering, and FastAPI REST endpoints:
+A comprehensive test suite covers models, transcript parsing, SQLite database persistence, MCP server, HTML dashboard rendering, and FastAPI REST endpoints:
 
 ```bash
 python3 -m unittest discover -s tests
@@ -216,7 +216,7 @@ python3 -m unittest discover -s tests
 
 Output:
 ```text
-Ran 29 tests in 0.165s
+Ran 39 tests in 0.350s
 
 OK
 ```
@@ -271,6 +271,7 @@ call-e-hackathon/
 ├── src/
 │   ├── __init__.py
 │   ├── models.py                  # Pydantic schemas (PO, Supplier, CallResult)
+│   ├── database.py                # SQLite persistence manager (WAL mode, indexes, CRUD)
 │   ├── calle_client.py            # CALL-E SDK client + High-fidelity simulator
 │   ├── transcript_parser.py       # Deterministic extraction of dates, costs, causes
 │   ├── reporter.py                # CSV, JSON, ASCII, and HTML dashboard generator
@@ -285,10 +286,12 @@ call-e-hackathon/
 ├── output/
 │   ├── procurement_status_report.csv  # Structured ERP delivery ledger
 │   ├── procurement_status_report.json # Full audit trail & structured intelligence
-│   └── procurement_dashboard.html     # Interactive single-page executive dashboard
+│   ├── procurement_dashboard.html     # Interactive single-page executive dashboard
+│   └── procurement_telephony.db       # SQLite database (auto-generated)
 ├── tests/
 │   ├── __init__.py
 │   ├── test_models.py             # Schema validation tests
+│   ├── test_database.py           # SQLite database unit & server integration tests
 │   ├── test_parser.py             # Parsing & categorization tests
 │   ├── test_agent.py              # End-to-end pipeline & reporting tests
 │   ├── test_dashboard.py          # HTML dashboard structure & export tests

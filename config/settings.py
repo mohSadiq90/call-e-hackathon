@@ -15,6 +15,9 @@ OUTPUT_DIR = BASE_DIR / "output"
 # Ensure directories exist
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+# Database configuration
+DATABASE_PATH = Path(os.getenv("DATABASE_PATH", str(OUTPUT_DIR / "procurement_telephony.db")))
+
 # CALL-E API Credentials
 CALLE_API_KEY = os.getenv("CALLE_API_KEY", "")
 CALLE_AGENT_ID = os.getenv("CALLE_AGENT_ID", "supplier-status-checker-v1")

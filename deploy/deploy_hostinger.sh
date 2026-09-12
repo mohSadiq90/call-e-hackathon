@@ -57,19 +57,47 @@ sudo systemctl restart "${SERVICE_NAME}"
 
 # 6. Setup Nginx Configuration
 echo "🌐 Configuring Nginx reverse proxy for ${DOMAIN}..."
-sudo cp "${INSTALL_DIR}/deploy/nginx/calle.fyro.cloud.conf" "/etc/nginx/sites-available/${DOMAIN}"
+if [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
+    sudo cp "${INSTALL_DIR}/deploy/nginx/calle.fyro.cloud.conf" "/etc/nginx/sites-available/${DOMAIN}"
+else
+    cat << 'EOF' | sudo tee "/etc/nginx/sites-available/${DOMAIN}" > /dev/null
+server {
+    listen 80;
+    listen [::]:80;
+    server_name calle.fyro.cloud;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 90s;
+        proxy_send_timeout 90s;
+        proxy_read_timeout 90s;
+    }
+}
+EOF
+fi
+
 sudo ln -sf "/etc/nginx/sites-available/${DOMAIN}" "/etc/nginx/sites-enabled/${DOMAIN}"
 
-# Test Nginx syntax
+# Test Nginx syntax and reload
 sudo nginx -t
+sudo systemctl reload nginx
 
 # 7. Obtain Let's Encrypt SSL certificate
-echo "🔒 Requesting Let's Encrypt SSL Certificate for ${DOMAIN}..."
-if sudo certbot --nginx -d "${DOMAIN}" --non-interactive --agree-tos --register-unsafely-without-email; then
-    echo "✅ SSL Certificate successfully installed for ${DOMAIN}!"
-else
-    echo "⚠️ Certbot challenge failed. Make sure DNS A record for ${DOMAIN} points to this VPS IP address."
-    echo "   Reloading Nginx in HTTP mode..."
+if [ ! -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
+    echo "🔒 Requesting Let's Encrypt SSL Certificate for ${DOMAIN}..."
+    if sudo certbot --nginx -d "${DOMAIN}" --non-interactive --agree-tos --redirect; then
+        echo "✅ SSL Certificate successfully installed for ${DOMAIN}!"
+    else
+        echo "⚠️ Certbot challenge failed. Make sure DNS A record for ${DOMAIN} points to this VPS IP address."
+        echo "   Continuing in HTTP mode..."
+    fi
 fi
 
 sudo systemctl reload nginx

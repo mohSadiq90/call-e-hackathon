@@ -14,6 +14,7 @@ from config.settings import DATA_DIR, OUTPUT_DIR
 from src.models import Supplier, PurchaseOrder, CallResult
 from src.calle_client import CalleSupplierAgentClient
 from src.reporter import ProcurementReporter
+from src.database import ProcurementDatabase
 
 
 def load_suppliers(json_path: Path) -> List[Dict[str, Any]]:
@@ -127,11 +128,15 @@ def main():
         status_symbol = "✅" if result.fulfillment_status.value == "ON_TIME" else "⚠️"
         print(f"    Status: {status_symbol} {result.fulfillment_status.value} | Revised: {result.revised_delivery_date} | Delay: +{result.delay_days}d")
 
-    # 4. Generate Reports
+    # 4. Generate Reports & Persist to SQLite
     batch_report = reporter.generate_batch_report(call_results)
     csv_file = reporter.export_csv(call_results)
     json_file = reporter.export_json(batch_report)
     html_file = reporter.export_html(batch_report)
+
+    db = ProcurementDatabase()
+    db.save_suppliers_and_orders(raw_data)
+    db.upsert_call_results_batch(call_results)
 
     # 5. Display Console Dashboard
     reporter.print_terminal_dashboard(batch_report)

@@ -14,7 +14,8 @@ from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 
-from config.settings import DATA_DIR, OUTPUT_DIR
+from config.settings import DATA_DIR, OUTPUT_DIR, DATABASE_PATH
+from src.database import ProcurementDatabase
 from src.models import (
     Supplier,
     PurchaseOrder,
@@ -36,12 +37,13 @@ app = FastAPI(
 
 # Global State Container
 class DashboardBackendState:
-    def __init__(self):
+    def __init__(self, db_path: Optional[Path] = None):
         self.data_path: Path = DATA_DIR / "suppliers_enterprise_50.json"
         if not self.data_path.exists():
             self.data_path = DATA_DIR / "suppliers.json"
         self.reporter = ProcurementReporter(output_dir=OUTPUT_DIR)
         self.client = CalleSupplierAgentClient(use_mock=True)
+        self.db = ProcurementDatabase(db_path=db_path or DATABASE_PATH)
         self.call_results: List[CallResult] = []
         self.report: Optional[BatchProcurementReport] = None
 
@@ -49,7 +51,17 @@ class DashboardBackendState:
         if dataset_path:
             self.data_path = dataset_path
 
-        # If existing report JSON exists and not forcing recompute, load from cache
+        # 1. Check SQLite database first if not force_recompute
+        if not force_recompute and self.db.count_calls() > 0:
+            stored_calls = self.db.load_all_calls()
+            is_enterprise = "enterprise_50" in self.data_path.name
+            if not is_enterprise or len(stored_calls) >= 50:
+                self.call_results = stored_calls
+                self.report = self.reporter.generate_batch_report(self.call_results)
+                print(f"[SERVER] Loaded {len(self.call_results)} call records from SQLite DB: {self.db.db_path}")
+                return
+
+        # 2. If existing report JSON exists and not forcing recompute, load from cache and sync to DB
         report_cache = OUTPUT_DIR / "procurement_status_report.json"
         if report_cache.exists() and not force_recompute:
             try:
@@ -60,12 +72,13 @@ class DashboardBackendState:
                         raise ValueError("Cached report contains fewer records than enterprise dataset")
                     self.report = BatchProcurementReport(**cache_dict)
                     self.call_results = self.report.call_records
-                    print(f"[SERVER] Loaded {len(self.call_results)} call records from cache: {report_cache}")
+                    self.db.upsert_call_results_batch(self.call_results)
+                    print(f"[SERVER] Loaded {len(self.call_results)} call records from cache and synced to SQLite DB: {self.db.db_path}")
                     return
             except Exception as e:
                 print(f"[SERVER] Failed to load cache ({e}), recomputing from dataset...")
 
-        # Otherwise execute mock calls from dataset
+        # 3. Otherwise execute mock calls from dataset and persist to SQLite
         if not self.data_path.exists():
             print(f"[SERVER WARN] Data path {self.data_path} not found, falling back to suppliers.json")
             self.data_path = DATA_DIR / "suppliers.json"
@@ -74,6 +87,8 @@ class DashboardBackendState:
             raw_data = json.load(f)
 
         print(f"[SERVER] Processing {len(raw_data)} supplier orders from {self.data_path.name}...")
+        self.db.save_suppliers_and_orders(raw_data)
+
         results = []
         for item in raw_data:
             supplier = Supplier(**item["supplier"])
@@ -87,11 +102,14 @@ class DashboardBackendState:
             results.append(res)
 
         self.call_results = results
+        # Persist all records to SQLite database
+        self.db.upsert_call_results_batch(self.call_results)
+
         self.report = self.reporter.generate_batch_report(self.call_results)
         self.reporter.export_csv(self.call_results)
         self.reporter.export_json(self.report)
         self.reporter.export_html(self.report)
-        print(f"[SERVER] Initialized {len(self.call_results)} calls. Dashboard ready.")
+        print(f"[SERVER] Initialized {len(self.call_results)} calls into SQLite DB. Dashboard ready.")
 
 
 state = DashboardBackendState()
@@ -142,14 +160,27 @@ def get_dashboard_html():
 @app.get("/health")
 @app.get("/api/health")
 def health_check():
-    """Health check endpoint."""
+    """Health check endpoint with SQLite database status."""
     if not state.call_results:
         state.load_initial_data()
     return {
         "status": "healthy",
         "service": "call-e-procurement-dashboard",
         "version": "1.0.0",
+        "database": "sqlite",
+        "database_records": state.db.count_calls(),
         "total_calls_loaded": len(state.call_results),
+    }
+
+
+@app.get("/api/db/stats")
+def get_db_stats():
+    """Returns SQLite database storage statistics and table structure."""
+    return {
+        "database_path": str(state.db.db_path),
+        "total_calls": state.db.count_calls(),
+        "tables": state.db.get_table_names(),
+        "suppliers_count": len(state.db.list_suppliers()),
     }
 
 
@@ -252,8 +283,9 @@ def trigger_outbound_call(payload: TriggerCallPayload):
         scenario_override=scenario_override,
     )
 
-    # Prepend new result to state
+    # Prepend new result to state & SQLite DB
     state.call_results.insert(0, result)
+    state.db.upsert_call_result(result)
     state.report = state.reporter.generate_batch_report(state.call_results)
     state.reporter.export_csv(state.call_results)
     state.reporter.export_json(state.report)
@@ -307,6 +339,9 @@ def trigger_batch_workflow(payload: Optional[TriggerBatchWorkflowPayload] = None
     # Prepend new results to state in reverse order so latest is on top
     for res in reversed(new_results):
         state.call_results.insert(0, res)
+
+    # Persist all newly executed calls to SQLite DB
+    state.db.upsert_call_results_batch(new_results)
 
     state.report = state.reporter.generate_batch_report(state.call_results)
     state.reporter.export_csv(state.call_results)

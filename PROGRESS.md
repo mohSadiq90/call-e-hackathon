@@ -270,5 +270,53 @@
     2. Add DNS `A` record in Hostinger hPanel pointing `calle` to the VPS IP address.
     3. Execute `./deploy/deploy_hostinger.sh` on the Hostinger VPS to provision live HTTPS service.
 
+### [2026-09-12] - Phase 6: SQLite Database Persistence, TDD Unit/Integration Test Suite & Hostinger VPS Provisioning
+- **Features & Enhancements**:
+  - **TDD Unit & Integration Test Suite (`tests/test_database.py`)**:
+    - Created unit & integration test case *prior* to implementation adhering to strict TDD practices.
+    - Verified failure state (`ModuleNotFoundError: No module named 'src.database'`) before developing the database layer.
+    - Test coverage includes:
+      - `test_database_initialization`: Verifies schema creation (`call_records`, `suppliers`, `purchase_orders`) and performance indexes.
+      - `test_upsert_and_get_by_id`: Full Pydantic `CallResult` serialization and deserialization round-trip.
+      - `test_get_by_order_id`: Index-accelerated order lookup.
+      - `test_upsert_updates_existing_record`: In-place updates without data duplication or state drift.
+      - `test_batch_upsert_and_count`: High-throughput transactional batch inserts.
+      - `test_query_filtering`: Dynamic filtering across fulfillment statuses, root causes, and escalation flags.
+      - `test_search_and_pagination`: Full-text substring matching across supplier metadata and pagination offset/limit.
+      - `test_supplier_and_po_storage`: Relational persistence of vendor profiles and PO line items.
+      - `test_server_state_sqlite_roundtrip`: End-to-end server integration verifying persistent state reload across server reboots.
+  - **High-Performance SQLite Persistence Engine (`src/database.py`)**:
+    - Built using Python 3.12 standard library `sqlite3` with zero third-party dependencies, adhering strictly to the 5GB disk limit.
+    - Configured with `PRAGMA journal_mode=WAL;` (Write-Ahead Logging) and `PRAGMA synchronous=NORMAL;` for concurrency and crash-resilience.
+    - Dual-layer storage architecture: structured relational columns for queries and indexes, combined with lossless `data_json` payload storage for forward-compatible Pydantic model hydration.
+  - **FastAPI Backend & CLI Integration (`src/server.py`, `main.py`, `config/settings.py`)**:
+    - Configured `DATABASE_PATH` in `config/settings.py` with environment variable override.
+    - Integrated `ProcurementDatabase` into `DashboardBackendState`: automatic database initialization, seamless loading from SQLite on startup, and instantaneous persistence on single-call triggers (`POST /api/calls/trigger`) and batch workflow triggers (`POST /api/workflow/trigger-batch`).
+    - Added `GET /api/db/stats` endpoint exposing real-time SQLite storage statistics, table schemas, and record counts.
+    - Updated `/health` endpoint with SQLite operational health metrics.
+    - Integrated SQLite persistence into CLI runner (`main.py`) for automatic persistence during local batch runs.
+  - **Automated Testing Suite Expansion**:
+    - Test suite expanded from 29 to 39 passing tests (100% pass rate in 0.28s).
+    - Verified all 39 tests passing across models, database, parsers, dashboard generator, REST API, and MCP server.
+- **Verification & Testing**:
+  - `python3 -m unittest discover -s tests`: 39/39 tests passing (100% pass rate).
+  - Disk space utilization: `/home` at 46% (2.5GB free out of 4.8GB).
+- **Key Files Created / Modified**:
+  - `src/database.py` (new)
+  - `tests/test_database.py` (new)
+  - `config/settings.py`
+  - `src/server.py`
+  - `tests/test_server.py`
+  - `main.py`
+  - `deploy/deploy_hostinger.sh`
+  - `README.md`
+  - `.gitignore`
+  - `PROGRESS.md`
+- **Current Status & Next Steps**:
+  - **Current Status**: SQLite persistence layer complete, verified with 39/39 tests passing. Deployment scripts ready.
+  - **Next Steps**:
+    1. Deploy latest codebase to Hostinger VPS (`calle.fyro.cloud`).
+    2. Provision Let's Encrypt SSL certificate and verify live HTTPS endpoints.
+
 
 

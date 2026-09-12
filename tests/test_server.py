@@ -148,13 +148,18 @@ class TestServerAPI(unittest.TestCase):
         self.assertGreater(data["processed_count"], 0)
         self.assertEqual(len(state.call_results), initial_count + data["processed_count"])
 
-    def test_api_reload(self):
-        """POST /api/reload should reload the dataset."""
-        resp = self.client.post("/api/reload")
+    def test_api_db_stats(self):
+        """GET /api/db/stats should return SQLite database metrics and table names."""
+        resp = self.client.get("/api/db/stats")
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
-        self.assertTrue(data["success"])
-        self.assertGreater(data["total_orders"], 0)
+        self.assertIn("database_path", data)
+        self.assertIn("total_calls", data)
+        self.assertIn("tables", data)
+        self.assertIn("call_records", data["tables"])
+        self.assertIn("suppliers", data["tables"])
+        self.assertIn("purchase_orders", data["tables"])
+        self.assertGreaterEqual(data["total_calls"], 1)
 
 
 if __name__ == "__main__":
