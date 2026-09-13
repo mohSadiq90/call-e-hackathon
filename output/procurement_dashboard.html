@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#090d16" id="meta-theme-color" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>CALL-E Enterprise Supply Chain Intelligence | Executive Operations Dashboard</title>
   <style>
     :root {
@@ -48,6 +51,12 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      max-width: 100%;
+      overflow-x: hidden;
     }
 
     body {
@@ -56,9 +65,12 @@
       color: var(--text-main);
       line-height: 1.5;
       min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
       overflow-x: hidden;
+      padding-top: env(safe-area-inset-top, 0);
+      padding-bottom: env(safe-area-inset-bottom, 0);
     }
 
     /* Top Navigation Bar */
@@ -73,17 +85,22 @@
       top: 0;
       z-index: 40;
       backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      gap: 1rem;
     }
 
     .brand-section {
       display: flex;
       align-items: center;
       gap: 0.85rem;
+      min-width: 0;
+      flex-shrink: 1;
     }
 
     .brand-icon {
       width: 40px;
       height: 40px;
+      min-width: 40px;
       border-radius: var(--radius-sm);
       background: linear-gradient(135deg, #3b82f6, #6366f1);
       display: flex;
@@ -95,6 +112,10 @@
       box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
     }
 
+    .brand-text {
+      min-width: 0;
+    }
+
     .brand-text h1 {
       font-size: 1.15rem;
       font-weight: 700;
@@ -102,12 +123,16 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      flex-wrap: wrap;
     }
 
     .brand-text p {
       font-size: 0.75rem;
       color: var(--text-muted);
       font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .badge-enterprise {
@@ -126,6 +151,11 @@
       display: flex;
       align-items: center;
       gap: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    .nav-mobile-bar {
+      display: none;
     }
 
     .status-indicator {
@@ -139,6 +169,7 @@
       padding: 0.35rem 0.75rem;
       border-radius: 9999px;
       border: 1px solid rgba(16, 185, 129, 0.25);
+      white-space: nowrap;
     }
 
     .pulse-dot {
@@ -148,6 +179,7 @@
       background-color: var(--accent-green);
       box-shadow: 0 0 8px var(--accent-green);
       animation: pulse 2s infinite ease-in-out;
+      flex-shrink: 0;
     }
 
     @keyframes pulse {
@@ -168,6 +200,8 @@
       transition: all 0.15s ease-in-out;
       border: 1px solid transparent;
       text-decoration: none;
+      white-space: nowrap;
+      user-select: none;
     }
 
     .btn-primary {
@@ -541,6 +575,18 @@
 
     .table-scroll {
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .table-scroll-hint {
+      display: none;
+      background: rgba(59, 130, 246, 0.08);
+      border-bottom: 1px solid var(--card-border);
+      padding: 0.5rem 0.85rem;
+      font-size: 0.74rem;
+      color: var(--accent-blue);
+      align-items: center;
+      justify-content: space-between;
     }
 
     table.data-table {
@@ -653,7 +699,7 @@
     /* Card Grid View */
     .cards-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
       gap: 1rem;
     }
 
@@ -1030,16 +1076,429 @@
       gap: 0.75rem;
     }
 
-    /* Footer */
-    footer.app-footer {
-      background: var(--bg-secondary);
-      border-top: 1px solid var(--card-border);
-      padding: 1.25rem 1.75rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 0.78rem;
-      color: var(--text-muted);
+    /* =========================================================
+       RESPONSIVE DESIGN & MOBILE LAYOUT PATTERNS (BEST PRACTICES)
+       ========================================================= */
+
+    /* Tablet & Medium Screens */
+    @media (max-width: 1024px) {
+      main.dashboard-container {
+        padding: 1.25rem 1.25rem 2.5rem 1.25rem;
+        gap: 1.25rem;
+      }
+      .kpi-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.85rem;
+      }
+      .analytics-row {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+    }
+
+    /* Mobile Screens (Landscape & Large Phones <= 900px) */
+    @media (max-width: 900px) {
+      header.top-nav {
+        padding: 0.75rem 1rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+
+      .brand-text p {
+        display: none;
+      }
+
+      .brand-text h1 {
+        font-size: 1rem;
+      }
+
+      .nav-mobile-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+      }
+
+      .nav-desktop-call-btn,
+      .nav-desktop-theme-btn {
+        display: none;
+      }
+
+      .nav-actions {
+        display: none;
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.6rem;
+        padding: 0.75rem 0 0.25rem 0;
+        border-top: 1px solid var(--card-border);
+      }
+
+      .nav-actions.is-open {
+        display: flex;
+      }
+
+      .nav-actions .status-indicator {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .nav-actions .btn {
+        width: 100%;
+        min-height: 42px;
+        font-size: 0.85rem;
+      }
+    }
+
+    /* Mobile Phones (<= 768px) */
+    @media (max-width: 768px) {
+      main.dashboard-container {
+        padding: 0.85rem 0.75rem 2rem 0.75rem;
+        gap: 0.85rem;
+      }
+
+      /* Summary Banner Mobile Grid */
+      .summary-banner {
+        padding: 1rem;
+        gap: 0.75rem;
+      }
+
+      .banner-title h2 {
+        font-size: 1.15rem;
+      }
+
+      .banner-title p {
+        font-size: 0.78rem;
+      }
+
+      .banner-meta {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+        width: 100%;
+      }
+
+      .banner-meta-item {
+        background: rgba(15, 23, 42, 0.6);
+        padding: 0.45rem 0.6rem;
+        border-radius: var(--radius-sm);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        font-size: 0.74rem;
+      }
+
+      /* KPI Cards 2-Column Mobile Grid Pattern */
+      .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.65rem;
+      }
+
+      .kpi-card {
+        padding: 0.85rem 0.75rem;
+      }
+
+      .kpi-label {
+        font-size: 0.68rem;
+      }
+
+      .kpi-icon {
+        width: 24px;
+        height: 24px;
+        font-size: 0.85rem;
+      }
+
+      .kpi-value {
+        font-size: 1.35rem;
+        margin-bottom: 0.25rem;
+      }
+
+      .kpi-subtext {
+        font-size: 0.68rem;
+        flex-wrap: wrap;
+        gap: 0.2rem;
+      }
+
+      .trend-pill {
+        font-size: 0.62rem;
+        padding: 0.05rem 0.35rem;
+      }
+
+      /* Analytics Chart Panel Mobile Styling */
+      .chart-panel {
+        padding: 1rem 0.85rem;
+      }
+
+      .chart-panel-title {
+        font-size: 0.85rem;
+      }
+
+      .chart-panel-desc {
+        font-size: 0.7rem;
+      }
+
+      .bar-label-row {
+        font-size: 0.75rem;
+        flex-wrap: wrap;
+        gap: 0.25rem 0.5rem;
+      }
+
+      /* Controls Bar Mobile Stack & Horizontal Chip Scroll */
+      .controls-bar {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 0.85rem;
+        gap: 0.75rem;
+      }
+
+      .search-wrapper {
+        min-width: 0;
+        width: 100%;
+      }
+
+      .search-input {
+        font-size: 16px; /* Prevents mobile Safari auto-zoom */
+        padding: 0.65rem 0.85rem 0.65rem 2.2rem;
+        min-height: 42px;
+      }
+
+      #status-filter-pills {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        gap: 0.4rem;
+        padding: 0.15rem 0.15rem 0.4rem 0.15rem;
+        margin: 0 -0.15rem;
+      }
+
+      #status-filter-pills::-webkit-scrollbar {
+        display: none;
+      }
+
+      .filter-pill {
+        flex-shrink: 0;
+        white-space: nowrap;
+        padding: 0.4rem 0.75rem;
+        font-size: 0.78rem;
+        min-height: 36px;
+      }
+
+      .controls-actions-group {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        width: 100%;
+        gap: 0.5rem;
+        align-items: center;
+      }
+
+      .dropdown-select {
+        font-size: 14px;
+        min-height: 40px;
+        width: 100%;
+      }
+
+      .view-toggle {
+        min-height: 40px;
+      }
+
+      .view-btn {
+        min-width: 40px;
+        min-height: 40px;
+      }
+
+      /* Table View Mobile Hint & Scroll Touch */
+      .table-scroll-hint {
+        display: flex;
+      }
+
+      table.data-table th {
+        padding: 0.65rem 0.6rem;
+        font-size: 0.68rem;
+      }
+
+      table.data-table td {
+        padding: 0.75rem 0.6rem;
+      }
+
+      /* Cards Grid View Mobile */
+      .cards-grid {
+        grid-template-columns: 1fr;
+        gap: 0.85rem;
+      }
+
+      .call-card {
+        padding: 1rem;
+      }
+
+      .card-footer {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.65rem;
+      }
+
+      .card-footer-actions {
+        display: flex;
+        gap: 0.5rem;
+        width: 100%;
+      }
+
+      .card-footer-actions .btn-action-view,
+      .card-footer-actions .btn {
+        flex: 1;
+        justify-content: center;
+        min-height: 40px;
+        font-size: 0.8rem;
+      }
+
+      /* Footer */
+      footer.app-footer {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.4rem;
+        padding: 1rem 0.75rem;
+        font-size: 0.74rem;
+      }
+    }
+
+    /* Narrow Mobile Phones (<= 640px) */
+    @media (max-width: 640px) {
+      /* Modal Mobile Bottom-Sheet Pattern */
+      .modal-overlay {
+        padding: 0;
+        align-items: flex-end;
+      }
+
+      .modal-dialog {
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        max-height: 94vh;
+        max-height: 94dvh;
+        width: 100%;
+        margin: 0;
+        animation: modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      @keyframes modalSlideUp {
+        0% { transform: translateY(100%); opacity: 0; }
+        100% { transform: translateY(0); opacity: 1; }
+      }
+
+      .modal-header {
+        padding: 1rem 1.15rem;
+      }
+
+      .modal-title h3 {
+        font-size: 1rem;
+      }
+
+      .modal-close {
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+      }
+
+      .modal-body {
+        padding: 1rem 1.15rem 1.75rem 1.15rem;
+        gap: 1rem;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      /* Collapse side-by-side form grid to 1-column on mobile */
+      .form-grid-2 {
+        grid-template-columns: 1fr;
+        gap: 0.85rem;
+      }
+
+      .form-input, .form-select {
+        font-size: 16px; /* Prevents auto-zoom on iOS */
+        padding: 0.65rem 0.85rem;
+        min-height: 44px;
+      }
+
+      .modal-overview-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.5rem !important;
+      }
+
+      .outcome-findings-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.5rem !important;
+      }
+
+      .modal-actions-row {
+        flex-direction: column-reverse;
+        gap: 0.5rem;
+        width: 100%;
+      }
+
+      .modal-actions-row .btn {
+        width: 100%;
+        min-height: 44px;
+        font-size: 0.88rem;
+      }
+
+      .chat-bubble {
+        max-width: 92%;
+        padding: 0.75rem 0.95rem;
+        font-size: 0.82rem;
+      }
+
+      .call-error-box .btn,
+      .call-outcome-box .btn {
+        width: 100%;
+        min-height: 42px;
+      }
+    }
+
+    /* Very Small Phones (<= 480px) */
+    @media (max-width: 480px) {
+      .controls-actions-group {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .controls-actions-group .view-toggle {
+        grid-column: 1 / -1;
+        display: flex;
+        width: 100%;
+      }
+
+      .controls-actions-group .view-toggle .view-btn {
+        flex: 1;
+        padding: 0.5rem;
+      }
+
+      .card-metrics-row {
+        padding: 0.5rem;
+        gap: 0.25rem;
+      }
+
+      .card-metric-val {
+        font-size: 0.78rem;
+      }
+
+      .card-metric-lbl {
+        font-size: 0.64rem;
+      }
+    }
+
+    /* Ultra Small Phones (<= 360px) */
+    @media (max-width: 360px) {
+      .kpi-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .banner-meta {
+        grid-template-columns: 1fr;
+      }
+
+      .modal-overview-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      .outcome-findings-grid {
+        grid-template-columns: 1fr !important;
+      }
     }
 
     /* Print styling */
@@ -1075,7 +1534,20 @@
       </div>
     </div>
 
-    <div class="nav-actions">
+    <!-- Mobile Quick Bar (visible on mobile screens <= 900px) -->
+    <div class="nav-mobile-bar">
+      <button class="btn btn-primary nav-mobile-call-btn" onclick="openNewCallModal()" title="Trigger Verification Call">
+        <span>📞</span> <span class="nav-mobile-call-text">Call</span>
+      </button>
+      <button class="btn btn-secondary nav-mobile-theme-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+        <span id="theme-icon-mobile">☀️</span>
+      </button>
+      <button class="btn btn-secondary nav-mobile-menu-btn" id="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle Navigation Menu">
+        <span id="mobile-menu-icon">☰</span>
+      </button>
+    </div>
+
+    <div class="nav-actions" id="nav-actions-menu">
       <div class="status-indicator" id="backend-status-indicator" title="Connection status to VPS FastAPI backend">
         <span class="pulse-dot" id="backend-pulse-dot"></span>
         <span id="backend-status-text">FastAPI Backend: Connecting...</span>
@@ -1083,7 +1555,7 @@
       <button class="btn btn-secondary" onclick="syncWithBackend(true)" title="Fetch latest calls and KPIs directly from Python SQLite database">
         <span>🔄</span> Sync Data
       </button>
-      <button class="btn btn-primary" onclick="openNewCallModal()">
+      <button class="btn btn-primary nav-desktop-call-btn" onclick="openNewCallModal()">
         <span>📞</span> Trigger Verification Call
       </button>
       <button class="btn btn-secondary" onclick="exportFilteredCSV()">
@@ -1092,7 +1564,7 @@
       <button class="btn btn-secondary" onclick="exportFilteredJSON()">
         <span>📋</span> Export JSON
       </button>
-      <button class="btn btn-secondary" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+      <button class="btn btn-secondary nav-desktop-theme-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
         <span id="theme-icon">☀️</span>
       </button>
     </div>
@@ -1260,7 +1732,7 @@
         </button>
       </div>
 
-      <div class="filters-group">
+      <div class="filters-group controls-actions-group">
         <select id="category-filter" class="dropdown-select" onchange="applyFilters()">
           <option value="ALL">All Categories</option>
         </select>
@@ -1281,6 +1753,10 @@
 
     <!-- Table View -->
     <section id="table-view-section" class="table-container">
+      <div class="table-scroll-hint">
+        <span>↔ Scroll horizontally to view full ledger</span>
+        <span>Tip: Switch to ☷ Cards for mobile view</span>
+      </div>
       <div class="table-scroll">
         <table class="data-table">
           <thead>
@@ -1324,7 +1800,7 @@
 
       <div class="modal-body">
         <!-- Call Overview Grid -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem;">
+        <div class="modal-overview-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem;">
           <div style="background: var(--bg-secondary); padding: 0.75rem; border-radius: var(--radius-sm);">
             <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Call ID</div>
             <div id="modal-call-id" style="font-weight: 700; font-size: 0.85rem; font-family: monospace;"></div>
@@ -1439,7 +1915,7 @@
               </select>
             </div>
 
-            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem;">
+            <div class="modal-actions-row" style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem;">
               <button type="button" class="btn btn-secondary" onclick="closeNewCallModal()">Cancel</button>
               <button type="submit" class="btn btn-primary" id="btn-submit-call">
                 <span>🚀</span> Dispatch Call via CALL-E
@@ -1523,7 +1999,7 @@
             </div>
 
             <!-- Structured Findings Grid -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.6rem; font-size: 0.78rem;">
+            <div class="outcome-findings-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.6rem; font-size: 0.78rem;">
               <div style="background: var(--bg-primary); padding: 0.5rem 0.7rem; border-radius: var(--radius-sm);">
                 <div style="color: var(--text-muted); font-size: 0.68rem; text-transform: uppercase;">Revised Date</div>
                 <div id="outcome-revised-date" style="font-weight: 700; margin-top: 2px;"></div>
@@ -1956,11 +2432,11 @@
             </div>
 
             <div class="card-footer">
-              <div style="display: flex; flex-direction: column; gap: 0.15rem;">
-                <span>👤 ${r.escalation_contact_name || r.contact_name}</span>
-                <span style="font-family:monospace;">${r.escalation_contact_phone || r.phone_number}</span>
+              <div style="display: flex; flex-direction: column; gap: 0.15rem; min-width: 0;">
+                <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">👤 ${r.escalation_contact_name || r.contact_name}</span>
+                <span style="font-family:monospace; font-size: 0.78rem;">${r.escalation_contact_phone || r.phone_number}</span>
               </div>
-              <div style="display: flex; gap: 0.4rem; align-items: center;">
+              <div class="card-footer-actions" style="display: flex; gap: 0.4rem; align-items: center;">
                 <button class="btn-action-view" onclick="event.stopPropagation(); openCallModal('${r.call_id}')" title="Inspect call transcript for ${r.order_id}">
                   👁️ View Call
                 </button>
@@ -2451,9 +2927,34 @@
     // Theme Toggle
     function toggleTheme() {
       document.body.classList.toggle('light-theme');
+      const isLight = document.body.classList.contains('light-theme');
       const icon = document.getElementById('theme-icon');
-      icon.textContent = document.body.classList.contains('light-theme') ? '🌙' : '☀️';
+      if (icon) icon.textContent = isLight ? '🌙' : '☀️';
+      const iconMobile = document.getElementById('theme-icon-mobile');
+      if (iconMobile) iconMobile.textContent = isLight ? '🌙' : '☀️';
+      const meta = document.getElementById('meta-theme-color');
+      if (meta) meta.setAttribute('content', isLight ? '#f8fafc' : '#090d16');
     }
+
+    // Mobile Menu Drawer Toggle
+    function toggleMobileMenu() {
+      const navMenu = document.getElementById('nav-actions-menu');
+      const menuIcon = document.getElementById('mobile-menu-icon');
+      if (!navMenu) return;
+      navMenu.classList.toggle('is-open');
+      const isOpen = navMenu.classList.contains('is-open');
+      if (menuIcon) menuIcon.textContent = isOpen ? '✕' : '☰';
+    }
+
+    // Auto-close mobile menu on desktop resize
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 900) {
+        const navMenu = document.getElementById('nav-actions-menu');
+        const menuIcon = document.getElementById('mobile-menu-icon');
+        if (navMenu) navMenu.classList.remove('is-open');
+        if (menuIcon) menuIcon.textContent = '☰';
+      }
+    });
 
     // Live Backend Synchronization with Python FastAPI Server & SQLite
     async function syncWithBackend(manual = false) {
@@ -2522,6 +3023,10 @@
 
     // App Initialization
     window.addEventListener('DOMContentLoaded', () => {
+      // Automatically default to Cards View on mobile devices for optimal responsive readability
+      if (window.innerWidth <= 768) {
+        setViewMode('cards');
+      }
       populateCategories();
       updateAnalytics();
       applyFilters();

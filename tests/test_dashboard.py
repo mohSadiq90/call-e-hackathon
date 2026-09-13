@@ -315,7 +315,44 @@ class TestHtmlDashboard(unittest.TestCase):
         self.assertIn("var(--accent-amber)", html)
         self.assertIn("#64748b", html)
 
+    def test_html_dashboard_mobile_friendly_responsive_layout(self):
+        """Validates mobile responsive design best practices, meta viewport, and layout patterns."""
+        html = render_html_dashboard(self.report)
+
+        # 1. Viewport Meta Tags & Theme
+        self.assertIn("viewport-fit=cover", html)
+        self.assertIn('name="theme-color"', html)
+        self.assertIn('name="apple-mobile-web-app-capable"', html)
+
+        # 2. Media Queries for Mobile & Tablet Breakpoints
+        self.assertIn("@media (max-width: 1024px)", html)
+        self.assertIn("@media (max-width: 900px)", html)
+        self.assertIn("@media (max-width: 768px)", html)
+        self.assertIn("@media (max-width: 640px)", html)
+        self.assertIn("@media (max-width: 480px)", html)
+        self.assertIn("@media (max-width: 360px)", html)
+
+        # 3. Mobile Navigation Controls & Drawer
+        self.assertIn("nav-mobile-bar", html)
+        self.assertIn("mobile-menu-btn", html)
+        self.assertIn("toggleMobileMenu", html)
+
+        # 4. Mobile Layout Patterns
+        self.assertIn("-webkit-overflow-scrolling: touch;", html)
+        self.assertIn("table-scroll-hint", html)
+        self.assertIn("modalSlideUp", html)
+        self.assertIn("modal-overview-grid", html)
+        self.assertIn("outcome-findings-grid", html)
+        self.assertIn("modal-actions-row", html)
+        self.assertIn("card-footer-actions", html)
+
+        # 5. Mobile Touch & Input Ergonomics
+        self.assertIn("font-size: 16px;", html)
+        self.assertIn("-webkit-tap-highlight-color: transparent;", html)
+        self.assertIn("min-height: 44px;", html)
+
 
 if __name__ == "__main__":
     unittest.main()
+
 

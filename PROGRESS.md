@@ -769,16 +769,56 @@
       - `test_html_dashboard_readonly_and_editable_form_states`
       - `test_html_dashboard_consolidated_analytics_widget_and_strict_colors`
     - Expanded test suite from 69 to **74 passing tests (100% pass rate in 0.48s)**.
+### [2026-09-13] - Phase 18: Mobile-Friendly Responsive Redesign & Layout Pattern Best Practices
+- **Features & Enhancements**:
+  - **Mobile Viewport & Safe-Area Configuration**:
+    - Configured `<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />` with `theme-color` (#090d16) and Apple Web App meta tags.
+    - Added safe-area padding variables (`env(safe-area-inset-top)`, `env(safe-area-inset-bottom)`) and dynamic viewport height units (`100dvh`).
+    - Added `-webkit-tap-highlight-color: transparent;` and eliminated horizontal scroll overflow across all viewports.
+  - **Responsive Top Navigation & Mobile Menu Drawer**:
+    - Created mobile quick bar (`.nav-mobile-bar`) on screens `<= 900px` providing 1-tap access to primary call trigger, theme toggle, and mobile menu hamburger (`☰` / `✕`).
+    - Implemented slide-down collapsible navigation drawer (`.nav-actions.is-open`) grouping secondary actions (FastAPI backend status indicator, Sync Data, Export CSV, Export JSON) without header blowout.
+    - Added auto-close behavior on desktop resize and synchronized dark/light mode toggle across desktop and mobile header buttons.
+  - **Executive Summary Banner Responsive Grid**:
+    - Replaced rigid horizontal flex layout with a responsive 2-column metadata grid (`.banner-meta`) on screens `<= 768px` (1-column on `<= 360px`).
+    - Styled metadata items into readable, self-contained cards with subtle borders and clear metric labels.
+  - **2-Column Executive KPI Card Grid Pattern**:
+    - Replaced desktop `minmax(230px, 1fr)` grid with an ergonomic 2-column mobile grid pattern (`grid-template-columns: repeat(2, 1fr)`) on screens `<= 768px`.
+    - Prevents 6 vertical screen-lengths of scrolling, allowing executives to inspect all operational KPIs at a glance.
+    - Scaled typography responsively (KPI values: `1.35rem`, subtext: `0.68rem`, trend pills: `0.62rem`).
+  - **Horizontal Chip Scroll Pattern for Status Filters**:
+    - Converted `#status-filter-pills` into a native app-like horizontal swipeable chip scroll container (`overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;`).
+    - Prevents filters from wrapping into 3-4 awkward lines, preserving vertical screen real estate.
+  - **Responsive Dual View Modes (Table vs. Cards)**:
+    - Automatically defaults to Cards View on mobile devices (`window.innerWidth <= 768`) for optimal responsive readability.
+    - Fixed card horizontal overflow bug by updating `.cards-grid` to `minmax(min(100%, 320px), 1fr)` and 1-column layout on mobile screens `<= 640px`.
+    - Added `.card-footer-actions` container with 50/50 full-width touch-friendly buttons (`👁️ View Call` and `📞 Call`, min 40px tap height).
+    - Added `.table-scroll-hint` ("↔ Scroll horizontally to view full ledger / Tip: Switch to ☷ Cards for mobile view") and touch momentum scrolling on data tables.
+  - **Mobile Bottom-Sheet Modal Pattern**:
+    - Styled `.modal-overlay` and `.modal-dialog` with a native bottom-sheet slide-up animation (`modalSlideUp`) on screens `<= 640px`.
+    - Enhanced close button touch target to 44px x 44px for thumb accessibility.
+    - Collapsed multi-column form grids (`.form-grid-2`) to 1 column, resolving squished input fields.
+    - Set `font-size: 16px` and `min-height: 44px` on form inputs to prevent iOS Safari auto-zoom.
+    - Converted call overview and outcome findings grids into responsive 2-column layouts (`.modal-overview-grid`, `.outcome-findings-grid`).
+    - Styled modal action buttons into stacked full-width touch buttons (`.modal-actions-row`).
+- **Automated Testing Suite Expansion (`tests/test_dashboard.py`)**:
+  - Added `test_html_dashboard_mobile_friendly_responsive_layout` testing:
+    - Viewport meta tags (`viewport-fit=cover`, `theme-color`, `apple-mobile-web-app-capable`).
+    - Responsive media queries (`1024px`, `900px`, `768px`, `640px`, `480px`, `360px`).
+    - Mobile navigation controls (`nav-mobile-bar`, `mobile-menu-btn`, `toggleMobileMenu`).
+    - Mobile layout patterns (chip touch scroll, table scroll hint, bottom-sheet slide-up, card footer actions).
+    - Touch ergonomics and iOS zoom prevention (`font-size: 16px`, `min-height: 44px`).
+  - Expanded test suite from 74 to **75 passing tests (100% pass rate in 0.49s)**.
 - **Key Files Modified**:
   - `src/html_dashboard.py`
   - `output/procurement_dashboard.html`
   - `tests/test_dashboard.py`
   - `PROGRESS.md`
 - **Current Status & Next Steps**:
-  - **Current Status**: All user feedback incorporated, verified with 74/74 tests passing.
+  - **Current Status**: Mobile-friendly responsive redesign complete and verified across all viewport breakpoints with 75/75 tests passing.
   - **Next Steps**:
     1. Commit and push changes to `origin/main`.
-    2. Deploy to Hostinger VPS (`calle.fyro.cloud`) and verify live service.
+    2. Deploy updated build to Hostinger VPS (`calle.fyro.cloud`).
 
 
 
