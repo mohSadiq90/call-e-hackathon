@@ -423,7 +423,7 @@ def trigger_outbound_call(payload: TriggerCallPayload):
         if payload.api_key is not None or not ENABLE_MOCK_SIMULATOR:
             raise HTTPException(
                 status_code=400,
-                detail="Valid CALLE_API_KEY is required for live telephony calls. Please configure CALLE_API_KEY in .env or enter your API key in the call modal.",
+                detail="Valid CALLE_API_KEY is required for live telephony calls. Please configure CALLE_API_KEY in the server .env environment file.",
             )
         else:
             print("[WARN] Live call requested but no valid CALLE_API_KEY configured. Falling back to offline simulator.")
@@ -504,7 +504,7 @@ def trigger_batch_workflow(payload: Optional[TriggerBatchWorkflowPayload] = None
         if payload.api_key is not None or not ENABLE_MOCK_SIMULATOR:
             raise HTTPException(
                 status_code=400,
-                detail="Valid CALLE_API_KEY is required for live telephony calls. Please configure CALLE_API_KEY in .env or provide your API key in the batch request.",
+                detail="Valid CALLE_API_KEY is required for live telephony calls. Please configure CALLE_API_KEY in the server .env environment file.",
             )
         else:
             use_mock = True

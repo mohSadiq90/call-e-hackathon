@@ -5,12 +5,16 @@ Loads configuration from environment variables with safe fallbacks.
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Base paths
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
 PROMPTS_DIR = BASE_DIR / "prompts"
 OUTPUT_DIR = BASE_DIR / "output"
+
+# Load environment variables from .env file if present
+load_dotenv(dotenv_path=BASE_DIR / ".env", override=False)
 
 # Ensure directories exist
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

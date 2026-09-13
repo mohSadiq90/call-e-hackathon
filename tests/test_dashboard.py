@@ -229,13 +229,13 @@ class TestHtmlDashboard(unittest.TestCase):
         html = render_html_dashboard(self.report)
         self.assertIn('<option value="live" selected>Live CALL-E Telephony Network (Outbound Line)</option>', html)
 
-    def test_html_dashboard_api_key_input_field(self):
-        """Validates that rendered HTML includes CALL-E API Key input field and toggle logic."""
+    def test_html_dashboard_api_key_field_removed_from_form(self):
+        """Validates that API key input field is NOT in the modal form (managed via server environment)."""
         html = render_html_dashboard(self.report)
-        self.assertIn('id="form-api-key"', html)
-        self.assertIn('id="group-api-key"', html)
-        self.assertIn('toggleApiKeyField', html)
-        self.assertIn('HAS_SERVER_API_KEY', html)
+        self.assertNotIn('id="form-api-key"', html)
+        self.assertNotIn('id="group-api-key"', html)
+        self.assertNotIn('toggleApiKeyField', html)
+        self.assertNotIn('HAS_SERVER_API_KEY', html)
 
 
 if __name__ == "__main__":

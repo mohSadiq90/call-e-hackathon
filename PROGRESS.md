@@ -635,6 +635,39 @@
     1. Deploy latest codebase to Hostinger VPS (`calle.fyro.cloud`) and restart systemd service.
     2. Notify user <@U06FVANTNHL> that live outbound calls are fixed, verified, and operational.
 
+### [2026-09-13] - Phase 14: API Key Form Parameter Removal, Server Environment .env Wiring & VPS Production Deployment
+- **Features & Enhancements**:
+  - **API Key Form Parameter Removal (`src/html_dashboard.py`, `output/procurement_dashboard.html`)**:
+    - Removed the CALL-E API Key input field (`#form-api-key`, `#group-api-key`) from the "Trigger Autonomous Outbound Call" modal dialog per user directive.
+    - Removed dynamic display toggle function `toggleApiKeyField()` and modal open triggers.
+    - Removed client-side `localStorage` caching of API keys and client-side credential alerts.
+    - Cleaned `executeManualCall()` payload to omit `api_key`, ensuring all outbound calls rely entirely on server-side environment configuration.
+  - **Server Environment Variable Loading & Architecture Alignment (`config/settings.py`, `src/server.py`)**:
+    - Added automatic `dotenv.load_dotenv(dotenv_path=BASE_DIR / ".env", override=False)` in `config/settings.py` to ensure server credentials in `/var/www/call-e-hackathon/.env` are reliably loaded into `os.environ` regardless of execution context (systemd, CLI, or test runners).
+    - Updated backend error reporting in `src/server.py` to direct operators to configure `CALLE_API_KEY` in the server environment file rather than the modal form.
+  - **Automated Testing Suite Expansion (`tests/test_dashboard.py`, `tests/test_server.py`)**:
+    - Updated `tests/test_dashboard.py`: replaced `test_html_dashboard_api_key_input_field` with `test_html_dashboard_api_key_field_removed_from_form` asserting `#form-api-key`, `#group-api-key`, and `toggleApiKeyField` are strictly absent from rendered HTML.
+    - Added `test_api_trigger_call_live_uses_server_environment_key` in `tests/test_server.py` verifying that live dispatches without `api_key` in the payload execute with the server's environment `CALLE_API_KEY`.
+    - Total test suite expanded to **64 passing tests (100% pass rate in 0.54s)**.
+  - **Hostinger VPS Live Deployment (`calle.fyro.cloud`)**:
+    - Synchronized live production repository `/var/www/call-e-hackathon` on Hostinger VPS (`72.61.224.120`) via SSH.
+    - Configured server environment file `/var/www/call-e-hackathon/.env` with `CALLE_API_KEY` definition.
+    - Restarted `calle.service` systemd service and verified healthy HTTP 200 response on `https://calle.fyro.cloud/`.
+- **Key Files Modified**:
+  - `src/html_dashboard.py`
+  - `output/procurement_dashboard.html`
+  - `config/settings.py`
+  - `src/server.py`
+  - `tests/test_dashboard.py`
+  - `tests/test_server.py`
+  - `PROGRESS.md`
+- **Current Status & Next Steps**:
+  - **Current Status**: Form field removed, server environment loading integrated, 64/64 tests passing, changes deployed live to VPS.
+  - **Next Steps**:
+    1. Await maintainer merge of PR #440.
+    2. Record demo video and submit Devpost entry.
+
+
 
 
 

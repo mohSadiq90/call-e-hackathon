@@ -229,6 +229,58 @@ class TestServerAPI(unittest.TestCase):
             self.assertEqual(data["result"]["call_id"], "call_custom_key_123")
             mock_client_cls.assert_called_with(api_key="calle_live_custom_secret_12345", use_mock=False)
 
+    def test_api_trigger_call_live_uses_server_environment_key(self):
+        """POST /api/calls/trigger without api_key in payload uses server environment CALLE_API_KEY."""
+        from unittest.mock import patch
+        from src.models import CallResult, FulfillmentStatus, DelayReasonCategory
+
+        mock_result = CallResult(
+            call_id="call_env_key_456",
+            order_id="PO-ENV-KEY",
+            supplier_name="Server Env Supplier",
+            contact_name="Bob",
+            phone_number="+15632813105",
+            call_status="COMPLETED",
+            fulfillment_status=FulfillmentStatus.ON_TIME,
+            original_delivery_date="2026-09-30",
+            revised_delivery_date="2026-09-30",
+            delay_days=0,
+            delay_category=DelayReasonCategory.NONE,
+            delay_notes="Verified via live CALL-E network with server key.",
+            expedited_freight_cost_usd=0.0,
+            estimated_financial_impact_usd=0.0,
+            escalation_contact_name="Bob",
+            escalation_contact_phone="+15632813105",
+            escalation_required=False,
+            call_duration_seconds=85,
+            raw_transcript="Agent: Testing server env key.\nSupplier: Confirmed on schedule.",
+        )
+
+        with patch("src.server.CALLE_API_KEY", "calle_live_server_env_key_99999"):
+            with patch("src.server.CalleSupplierAgentClient") as mock_client_cls:
+                mock_instance = mock_client_cls.return_value
+                mock_instance.execute_call.return_value = mock_result
+
+                # No api_key field in payload (exactly as sent by the updated form)
+                payload = {
+                    "supplier_id": "SUP-LIVE-ENV",
+                    "supplier_name": "Server Env Supplier",
+                    "contact_name": "Bob",
+                    "phone_number": "+1-563-281-3105",
+                    "order_id": "PO-ENV-KEY",
+                    "item_description": "Laser Optics",
+                    "quantity": 500,
+                    "committed_delivery_date": "2026-09-30",
+                    "live": True,
+                }
+                resp = self.client.post("/api/calls/trigger", json=payload)
+                self.assertEqual(resp.status_code, 200)
+                data = resp.json()
+                self.assertTrue(data["success"])
+                self.assertTrue(data["is_live"])
+                self.assertEqual(data["result"]["call_id"], "call_env_key_456")
+                mock_client_cls.assert_called_with(api_key="calle_live_server_env_key_99999", use_mock=False)
+
     def test_api_export_csv(self):
         """GET /api/export/csv should stream CSV data."""
         resp = self.client.get("/api/export/csv")
