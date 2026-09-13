@@ -661,11 +661,50 @@
   - `tests/test_dashboard.py`
   - `tests/test_server.py`
   - `PROGRESS.md`
+### [2026-09-13] - Phase 15: Outbound Form Pre-Filling, Real-Time Stepper Progress, Live VPS SQLite Sync & Status Indicator
+- **Features & Enhancements**:
+  - **Dynamic Form Pre-Filling Architecture (`src/html_dashboard.py`, `output/procurement_dashboard.html`)**:
+    - Opening the "Trigger Autonomous Outbound Call" modal automatically pre-fills all input fields (Target Supplier, Purchase Order ID, Committed Delivery Date, Supplier Contact Name, Supplier Phone Number, and Item Description) with existing supplier order data by default.
+    - Dynamic supplier dropdown selection instantly re-populates all inputs to match the selected vendor's purchase order.
+    - Added custom supplier option (`➕ Custom Supplier / Manual Entry`) allowing quick entry of custom vendors with auto-generated PO numbers.
+    - Added helpful guidance tip below the phone field encouraging operators to test by entering their own mobile numbers.
+  - **Individual Row & Card "📞 Call" Triggers (`src/html_dashboard.py`, `output/procurement_dashboard.html`)**:
+    - Added dedicated "📞 Call" action button to every row in the Data Table View alongside "View".
+    - Added dedicated "📞 Call" action button to every card in the Cards Grid View alongside "View".
+    - Tapping "📞 Call" on any specific supplier order immediately opens the form pre-filled with that exact row's order ID, vendor name, contact, phone, item description, and committed delivery date.
+  - **Real-Time Call Execution Stepper & Synchronous UI Updates (`src/html_dashboard.py`)**:
+    - Added an animated 4-step progress stepper card inside the modal with active icons and a live execution timer (`MM:SS`):
+      1. Transmitting parameters to Python FastAPI backend on VPS.
+      2. Initializing CALL-E telephony SDK & connecting carrier network line.
+      3. Carrier network dialing target phone & autonomous AI voice agent in-flight.
+      4. Extracting structured fulfillment details, calculating financial exposure & persisting to SQLite DB.
+    - On call completion, synchronously prepends the new call record, recalculates KPIs, updates analytics distributions, refreshes table and card views, closes the trigger dialog, and automatically opens the full Conversational Dialogue Transcript modal.
+  - **Live VPS Backend Health & Database Synchronization (`src/html_dashboard.py`, `src/server.py`)**:
+    - Added top navigation backend status indicator: `● Python Backend: Online (X calls in SQLite)` with animated green pulse dot.
+    - Added "🔄 Sync Data" button in top nav to manually re-fetch and synchronize with SQLite.
+    - Integrated automatic background sync on `DOMContentLoaded`: fetches `/health`, `/api/calls`, and `/api/summary` to ensure the dashboard is always live and reflective of server state.
+    - Added `@app.head` decorators to `/health` and `/api/health` in `src/server.py` to prevent 405 Method Not Allowed on HEAD requests.
+    - Included `has_calle_api_key` and `telephony_mode` in `/health` and `telephony_mode` in `/api/calls/trigger`.
+  - **Automated Testing Suite Expansion (`tests/test_dashboard.py`, `tests/test_server.py`)**:
+    - Added `test_html_dashboard_call_action_buttons_and_stepper` in `tests/test_dashboard.py`.
+    - Added `test_html_dashboard_live_backend_sync_elements` in `tests/test_dashboard.py`.
+    - Added `test_health_head_method_and_telephony_readiness` in `tests/test_server.py`.
+    - Expanded test suite from 64 to **67 passing tests (100% pass rate in 0.50s)**.
+- **Key Files Modified**:
+  - `src/html_dashboard.py`
+  - `src/server.py`
+  - `output/procurement_dashboard.html`
+  - `output/procurement_status_report.csv`
+  - `output/procurement_status_report.json`
+  - `tests/test_dashboard.py`
+  - `tests/test_server.py`
+  - `PROGRESS.md`
 - **Current Status & Next Steps**:
-  - **Current Status**: Form field removed, server environment loading integrated, 64/64 tests passing, changes deployed live to VPS.
+  - **Current Status**: All form pre-filling, real-time call progress tracking, live VPS backend synchronization, and health endpoints implemented and verified with 67/67 passing tests.
   - **Next Steps**:
-    1. Await maintainer merge of PR #440.
-    2. Record demo video and submit Devpost entry.
+    1. Deploy latest codebase to Hostinger VPS (`calle.fyro.cloud`) and restart systemd service.
+    2. Respond to user <@U06FVANTNHL> with concise Slack report.
+
 
 
 

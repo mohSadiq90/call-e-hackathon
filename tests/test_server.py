@@ -385,6 +385,19 @@ class TestServerAPI(unittest.TestCase):
         orders4 = [c["order_id"] for c in resp4.json()]
         self.assertIn("PO-88219", orders4)
 
+    def test_health_head_method_and_telephony_readiness(self):
+        """HEAD /health and GET /health should succeed and return database count and telephony readiness."""
+        head_resp = self.client.head("/health")
+        self.assertEqual(head_resp.status_code, 200)
+
+        get_resp = self.client.get("/health")
+        self.assertEqual(get_resp.status_code, 200)
+        data = get_resp.json()
+        self.assertEqual(data["status"], "healthy")
+        self.assertIn("database_records", data)
+        self.assertIn("has_calle_api_key", data)
+        self.assertIn("telephony_mode", data)
+
 
 if __name__ == "__main__":
     unittest.main()

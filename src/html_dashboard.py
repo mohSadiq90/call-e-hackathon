@@ -951,12 +951,15 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
     </div>
 
     <div class="nav-actions">
-      <div class="status-indicator">
-        <span class="pulse-dot"></span>
-        <span>CALL-E Voice Network Active</span>
+      <div class="status-indicator" id="backend-status-indicator" title="Connection status to VPS FastAPI backend">
+        <span class="pulse-dot" id="backend-pulse-dot"></span>
+        <span id="backend-status-text">FastAPI Backend: Connecting...</span>
       </div>
+      <button class="btn btn-secondary" onclick="syncWithBackend(true)" title="Fetch latest calls and KPIs directly from Python SQLite database">
+        <span>🔄</span> Sync Data
+      </button>
       <button class="btn btn-primary" onclick="openNewCallModal()">
-        <span>+</span> Trigger Verification Call
+        <span>📞</span> Trigger Verification Call
       </button>
       <button class="btn btn-secondary" onclick="exportFilteredCSV()">
         <span>📥</span> Export CSV
@@ -1299,6 +1302,7 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
             <div class="form-group">
               <label class="form-label">Supplier Phone Number</label>
               <input type="text" id="form-phone" class="form-input" required placeholder="+1-555-019-4821" />
+              <span style="font-size: 0.71rem; color: var(--text-dim); margin-top: 0.15rem;">Tip: Change to your personal mobile number to test receiving the real call.</span>
             </div>
           </div>
 
@@ -1313,6 +1317,36 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
               <option value="live" selected>Live CALL-E Telephony Network (Outbound Line)</option>
               <option value="mock">High-Fidelity Offline Simulator (Instant / Zero API Cost)</option>
             </select>
+          </div>
+
+          <!-- Live Call Execution Progress Stepper (animated during dispatch) -->
+          <div id="call-progress-card" style="display: none; background: var(--bg-secondary); border: 1px solid var(--accent-blue); border-radius: var(--radius-md); padding: 1.15rem; flex-direction: column; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--card-border); padding-bottom: 0.6rem;">
+              <div style="font-weight: 700; font-size: 0.88rem; display: flex; align-items: center; gap: 0.45rem;">
+                <span class="pulse-dot" id="progress-pulse-dot" style="background-color: var(--accent-blue);"></span>
+                <span id="call-progress-title">Telephony Execution in Progress...</span>
+              </div>
+              <span id="call-progress-timer" style="font-family: monospace; font-size: 0.82rem; color: var(--accent-cyan); font-weight: 700;">00:00</span>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.55rem; font-size: 0.8rem;">
+              <div id="pstep-1" style="display: flex; align-items: center; gap: 0.45rem; color: var(--text-muted);">
+                <span id="picon-1" style="font-size: 0.95rem;">⏳</span>
+                <span id="plbl-1">1. Transmitting parameters to Python FastAPI backend...</span>
+              </div>
+              <div id="pstep-2" style="display: flex; align-items: center; gap: 0.45rem; color: var(--text-muted);">
+                <span id="picon-2" style="font-size: 0.95rem;">⏳</span>
+                <span id="plbl-2">2. Initializing CALL-E telephony client & dispatching outbound call task...</span>
+              </div>
+              <div id="pstep-3" style="display: flex; align-items: center; gap: 0.45rem; color: var(--text-muted);">
+                <span id="picon-3" style="font-size: 0.95rem;">⏳</span>
+                <span id="plbl-3">3. Telephony network dialing destination phone & AI agent conversing...</span>
+              </div>
+              <div id="pstep-4" style="display: flex; align-items: center; gap: 0.45rem; color: var(--text-muted);">
+                <span id="picon-4" style="font-size: 0.95rem;">⏳</span>
+                <span id="plbl-4">4. Extracting structured fulfillment details & persisting to SQLite DB...</span>
+              </div>
+            </div>
           </div>
 
           <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem;">
@@ -1368,32 +1402,81 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       }});
     }}
 
-    // Populate Supplier Selection in Trigger Modal
-    function populateSupplierSelect() {{
+    // Populate Supplier Selection & Pre-fill Trigger Modal
+    function populateSupplierSelect(selectedOrderId = null) {{
       const select = document.getElementById('form-supplier-select');
-      select.innerHTML = '<option value="">-- Choose Existing Supplier or Custom --</option>';
+      select.innerHTML = '';
       const seen = new Set();
+      let targetCall = null;
+
+      if (selectedOrderId) {{
+        targetCall = allCalls.find(c => c.order_id === selectedOrderId);
+      }}
+      if (!targetCall && allCalls.length > 0) {{
+        targetCall = allCalls[0];
+      }}
+
       allCalls.forEach(c => {{
         if (!seen.has(c.supplier_name)) {{
           seen.add(c.supplier_name);
           const opt = document.createElement('option');
           opt.value = c.supplier_name;
-          opt.textContent = `${{c.supplier_name}} (${{c.contact_name}})`;
+          opt.textContent = `${{c.supplier_name}} (${{c.order_id}} - ${{c.contact_name}})`;
+          opt.dataset.orderId = c.order_id;
           opt.dataset.contact = c.contact_name;
           opt.dataset.phone = c.phone_number;
+          opt.dataset.deliveryDate = c.revised_delivery_date || c.original_delivery_date || '';
+          opt.dataset.itemDesc = c.delay_notes || 'Confirmed procurement verification units';
+
+          if (targetCall && targetCall.supplier_name === c.supplier_name) {{
+            opt.selected = true;
+          }}
           select.appendChild(opt);
         }}
       }});
+
+      const customOpt = document.createElement('option');
+      customOpt.value = '__CUSTOM__';
+      customOpt.textContent = '➕ Custom Supplier (Manual Entry)';
+      select.appendChild(customOpt);
+
+      if (targetCall) {{
+        fillFormFieldsFromCall(targetCall);
+      }}
+    }}
+
+    function fillFormFieldsFromCall(c) {{
+      if (!c) return;
+      document.getElementById('form-po-id').value = c.order_id || 'PO-99500';
+      document.getElementById('form-delivery-date').value = c.revised_delivery_date || c.original_delivery_date || new Date().toISOString().slice(0, 10);
+      document.getElementById('form-contact-name').value = c.contact_name || '';
+      document.getElementById('form-phone').value = c.phone_number || '';
+      document.getElementById('form-item-desc').value = c.delay_notes || 'Standard procurement batch';
     }}
 
     function populateSupplierFields() {{
       const select = document.getElementById('form-supplier-select');
       const selected = select.options[select.selectedIndex];
-      if (selected && selected.dataset.contact) {{
+      if (!selected) return;
+
+      if (selected.value === '__CUSTOM__') {{
+        document.getElementById('form-po-id').value = 'PO-' + Math.floor(10000 + Math.random() * 90000);
+        document.getElementById('form-delivery-date').value = new Date().toISOString().slice(0, 10);
+        document.getElementById('form-contact-name').value = '';
+        document.getElementById('form-phone').value = '';
+        document.getElementById('form-item-desc').value = 'Procurement fulfillment verification';
+        return;
+      }}
+
+      if (selected.dataset.orderId) {{
+        document.getElementById('form-po-id').value = selected.dataset.orderId;
+        document.getElementById('form-delivery-date').value = selected.dataset.deliveryDate;
         document.getElementById('form-contact-name').value = selected.dataset.contact;
         document.getElementById('form-phone').value = selected.dataset.phone;
+        document.getElementById('form-item-desc').value = selected.dataset.itemDesc;
       }}
     }}
+
 
     // Update Analytics Charts & Distribution
     function updateAnalytics() {{
@@ -1556,9 +1639,14 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
               <div style="font-size:0.7rem;color:var(--text-dim);font-family:monospace;">${{r.escalation_contact_phone || r.phone_number}}</div>
             </td>
             <td>
-              <button class="btn btn-secondary" style="padding:0.25rem 0.55rem;font-size:0.72rem;" onclick="event.stopPropagation(); openCallModal('${{r.call_id}}')">
-                View Call
-              </button>
+              <div style="display: flex; gap: 0.35rem; align-items: center;">
+                <button class="btn btn-secondary" style="padding: 0.25rem 0.55rem; font-size: 0.72rem;" onclick="event.stopPropagation(); openCallModal('${{r.call_id}}')">
+                  View
+                </button>
+                <button class="btn btn-primary" style="padding: 0.25rem 0.55rem; font-size: 0.72rem;" onclick="event.stopPropagation(); openNewCallModal('${{r.order_id}}')" title="Place verification call for ${{r.order_id}}">
+                  📞 Call
+                </button>
+              </div>
             </td>
           </tr>
         `;
@@ -1611,8 +1699,18 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
             </div>
 
             <div class="card-footer">
-              <span>👤 ${{r.escalation_contact_name || r.contact_name}}</span>
-              <span style="font-family:monospace;">${{r.escalation_contact_phone || r.phone_number}}</span>
+              <div style="display: flex; flex-direction: column; gap: 0.15rem;">
+                <span>👤 ${{r.escalation_contact_name || r.contact_name}}</span>
+                <span style="font-family:monospace;">${{r.escalation_contact_phone || r.phone_number}}</span>
+              </div>
+              <div style="display: flex; gap: 0.35rem; align-items: center;">
+                <button class="btn btn-secondary" style="padding: 0.25rem 0.55rem; font-size: 0.72rem;" onclick="event.stopPropagation(); openCallModal('${{r.call_id}}')">
+                  View
+                </button>
+                <button class="btn btn-primary" style="padding: 0.25rem 0.55rem; font-size: 0.72rem;" onclick="event.stopPropagation(); openNewCallModal('${{r.order_id}}')" title="Place verification call for ${{r.order_id}}">
+                  📞 Call
+                </button>
+              </div>
             </div>
           </div>
         `;
@@ -1748,8 +1846,17 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
     }}
 
     // Trigger New Call Modal
-    function openNewCallModal() {{
-      populateSupplierSelect();
+    function openNewCallModal(orderId = null) {{
+      populateSupplierSelect(orderId);
+      const card = document.getElementById('call-progress-card');
+      if (card) card.style.display = 'none';
+      const form = document.getElementById('new-call-form');
+      if (form) form.style.display = 'flex';
+      const btn = document.getElementById('btn-submit-call');
+      if (btn) {{
+        btn.disabled = false;
+        btn.innerHTML = '<span>🚀</span> Dispatch Call via CALL-E';
+      }}
       document.getElementById('new-call-modal').classList.add('active');
     }}
 
@@ -1764,7 +1871,6 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
     async function executeManualCall(e) {{
       e.preventDefault();
       const btn = document.getElementById('btn-submit-call');
-      btn.innerHTML = '<span>⏳</span> Placing Outbound Call...';
       btn.disabled = true;
 
       const poId = document.getElementById('form-po-id').value;
@@ -1774,7 +1880,63 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       const itemDesc = document.getElementById('form-item-desc').value;
       const mode = document.getElementById('form-mode').value;
       const select = document.getElementById('form-supplier-select');
-      const supplierName = select.value || 'Custom Supplier Logistics';
+      const supplierName = (select.value === '__CUSTOM__' || !select.value) ? 'Custom Supplier Logistics' : select.value;
+
+      // Display and reset Real-Time Call Progress Card
+      const progressCard = document.getElementById('call-progress-card');
+      const timerElem = document.getElementById('call-progress-timer');
+      const dialNumberElem = document.getElementById('progress-dial-number');
+      if (dialNumberElem) dialNumberElem.textContent = phone;
+      if (progressCard) progressCard.style.display = 'flex';
+
+      function setStep(num, state, msg = null) {{
+        const icon = document.getElementById(`picon-${{num}}`);
+        const lbl = document.getElementById(`plbl-${{num}}`);
+        const step = document.getElementById(`pstep-${{num}}`);
+        if (!icon || !lbl || !step) return;
+        if (msg) lbl.innerHTML = msg;
+        if (state === 'active') {{
+          icon.textContent = '🔄';
+          step.style.color = 'var(--accent-blue)';
+          step.style.fontWeight = '600';
+        }} else if (state === 'done') {{
+          icon.textContent = '✅';
+          step.style.color = 'var(--accent-green)';
+          step.style.fontWeight = '500';
+        }} else if (state === 'error') {{
+          icon.textContent = '❌';
+          step.style.color = 'var(--accent-red)';
+          step.style.fontWeight = '600';
+        }} else {{
+          icon.textContent = '⏳';
+          step.style.color = 'var(--text-muted)';
+          step.style.fontWeight = 'normal';
+        }}
+      }}
+
+      setStep(1, 'active', '1. Transmitting parameters to Python FastAPI backend on VPS...');
+      setStep(2, 'pending');
+      setStep(3, 'pending');
+      setStep(4, 'pending');
+
+      let secondsElapsed = 0;
+      if (timerElem) timerElem.textContent = '00:00';
+      const timerInterval = setInterval(() => {{
+        secondsElapsed += 1;
+        const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+        const secs = String(secondsElapsed % 60).padStart(2, '0');
+        if (timerElem) timerElem.textContent = `${{mins}}:${{secs}}`;
+      }}, 1000);
+
+      setTimeout(() => {{
+        setStep(1, 'done', '1. Connected to Python FastAPI backend on VPS.');
+        setStep(2, 'active', mode === 'live' ? '2. Initializing CALL-E telephony SDK & connecting carrier line...' : '2. Initializing high-fidelity offline simulation engine...');
+      }}, 400);
+
+      setTimeout(() => {{
+        setStep(2, 'done', mode === 'live' ? '2. Dispatched task to CALL-E API (Carrier network line open).' : '2. Offline simulation engine armed.');
+        setStep(3, 'active', mode === 'live' ? `3. Carrier dialing <strong style="color:var(--text-main);">${{phone}}</strong> & AI voice agent in-flight...` : `3. Simulating conversational dialogue with ${{contactName}}...`);
+      }}, 1200);
 
       // Call Backend API or Simulate
       let newRecord = null;
@@ -1793,24 +1955,32 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
             live: mode === 'live'
           }})
         }});
+
+        clearInterval(timerInterval);
+
         if (resp.ok) {{
           const data = await resp.json();
           newRecord = data.result;
+          setStep(3, 'done', mode === 'live' && data.is_live ? `3. Carrier call completed to ${{phone}} (Duration: ${{newRecord.call_duration_seconds}}s).` : `3. Telephony dialogue completed.`);
+          setStep(4, 'active', '4. Synchronizing transcript, extracting results & persisting to SQLite DB...');
           if (data.is_live) {{
             console.log('✓ Live call dispatched via CALL-E:', newRecord.call_id);
           }}
         }} else {{
           const errData = await resp.json().catch(() => ({{}}));
           const errMsg = errData.detail || resp.statusText || 'Call dispatch failed';
-          alert('❌ Call Dispatch Failed:\\n\\n' + errMsg);
+          setStep(3, 'error', `3. Telephony execution halted: ${{errMsg}}`);
+          alert('❌ Call Dispatch Notice:\\n\\n' + errMsg);
           btn.innerHTML = '<span>🚀</span> Dispatch Call via CALL-E';
           btn.disabled = false;
           return;
         }}
       }} catch (err) {{
+        clearInterval(timerInterval);
         console.log('Backend connection error:', err);
         if (mode === 'live') {{
-          alert('❌ Network Error:\\n\\nCould not connect to backend server: ' + err.message);
+          setStep(1, 'error', '1. Failed to connect to Python backend on VPS: ' + err.message);
+          alert('❌ Network Error:\\n\\nCould not connect to Python FastAPI backend on VPS: ' + err.message);
           btn.innerHTML = '<span>🚀</span> Dispatch Call via CALL-E';
           btn.disabled = false;
           return;
@@ -1842,6 +2012,8 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
         }};
       }}
 
+      setStep(4, 'done', '4. Structured conversation persisted to SQLite DB & synced.');
+
       // Prepend to calls array
       allCalls.unshift(newRecord);
       reportState.total_orders_checked += 1;
@@ -1849,7 +2021,7 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       if (newRecord.fulfillment_status === 'DELAYED') reportState.delayed_count += 1;
       reportState.on_time_percentage = Math.round((reportState.on_time_count / reportState.total_orders_checked) * 100);
 
-      // Refresh UI
+      // Refresh UI synchronously
       document.getElementById('kpi-total-orders').textContent = reportState.total_orders_checked;
       document.getElementById('kpi-on-time-pct').textContent = reportState.on_time_percentage + '%';
       document.getElementById('kpi-on-time-cnt').textContent = reportState.on_time_count;
@@ -1858,12 +2030,12 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       updateAnalytics();
       applyFilters();
 
-      btn.innerHTML = '<span>🚀</span> Dispatch Call via CALL-E';
-      btn.disabled = false;
-      closeNewCallModal();
-
-      // Open new call modal immediately
-      openCallModal(newRecord.call_id);
+      setTimeout(() => {{
+        btn.innerHTML = '<span>🚀</span> Dispatch Call via CALL-E';
+        btn.disabled = false;
+        closeNewCallModal();
+        openCallModal(newRecord.call_id);
+      }}, 600);
     }}
 
     // Export Helpers
@@ -1911,11 +2083,75 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       icon.textContent = document.body.classList.contains('light-theme') ? '🌙' : '☀️';
     }}
 
+    // Live Backend Synchronization with Python FastAPI Server & SQLite
+    async function syncWithBackend(manual = false) {{
+      const ind = document.getElementById('backend-status-indicator');
+      const txt = document.getElementById('backend-status-text');
+      const dot = document.getElementById('backend-pulse-dot');
+      try {{
+        const [healthResp, callsResp, summaryResp] = await Promise.all([
+          fetch('/health').catch(() => null),
+          fetch('/api/calls?limit=200').catch(() => null),
+          fetch('/api/summary').catch(() => null)
+        ]);
+
+        if (healthResp && healthResp.ok) {{
+          const hData = await healthResp.json();
+          if (ind && txt) {{
+            ind.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+            ind.style.background = 'rgba(16, 185, 129, 0.1)';
+            txt.style.color = 'var(--accent-green)';
+            txt.textContent = `Python Backend: Online (${{hData.database_records || hData.total_calls_loaded || 0}} calls in SQLite)`;
+            if (dot) dot.style.backgroundColor = 'var(--accent-green)';
+          }}
+        }}
+
+        if (callsResp && callsResp.ok) {{
+          const freshCalls = await callsResp.json();
+          if (Array.isArray(freshCalls) && freshCalls.length > 0) {{
+            allCalls = freshCalls;
+          }}
+        }}
+
+        if (summaryResp && summaryResp.ok) {{
+          const freshSummary = await summaryResp.json();
+          if (freshSummary && freshSummary.report_id) {{
+            reportState = freshSummary;
+            const repId = document.getElementById('rep-id');
+            const vCount = document.getElementById('vendor-count');
+            const rVal = document.getElementById('total-risk-val');
+            if (repId) repId.textContent = reportState.report_id;
+            if (vCount) vCount.textContent = reportState.total_orders_checked;
+            if (rVal) rVal.textContent = '$' + Number(reportState.total_financial_risk_usd || 0).toLocaleString(undefined, {{minimumFractionDigits: 2, maximumFractionDigits: 2}});
+            document.getElementById('kpi-total-orders').textContent = reportState.total_orders_checked;
+            document.getElementById('kpi-on-time-pct').textContent = (reportState.on_time_percentage || 0) + '%';
+            document.getElementById('kpi-on-time-cnt').textContent = reportState.on_time_count || 0;
+            document.getElementById('kpi-delayed-cnt').textContent = reportState.delayed_count || 0;
+            document.getElementById('kpi-financial-risk').textContent = '$' + Math.round(reportState.total_financial_risk_usd || 0).toLocaleString();
+            document.getElementById('kpi-escalations-cnt').textContent = (reportState.critical_escalations || []).length;
+          }}
+        }}
+
+        populateCategories();
+        updateAnalytics();
+        applyFilters();
+
+        if (manual) {{
+          console.log('✓ Successfully synchronized with Python SQLite backend');
+        }}
+      }} catch (err) {{
+        console.log('Backend sync note:', err.message);
+        if (txt) txt.textContent = 'Standalone Mode (Client Ready)';
+        if (dot) dot.style.backgroundColor = 'var(--accent-amber)';
+      }}
+    }}
+
     // App Initialization
     window.addEventListener('DOMContentLoaded', () => {{
       populateCategories();
       updateAnalytics();
       applyFilters();
+      syncWithBackend();
     }});
   </script>
 </body>

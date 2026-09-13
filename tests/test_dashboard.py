@@ -237,6 +237,24 @@ class TestHtmlDashboard(unittest.TestCase):
         self.assertNotIn('toggleApiKeyField', html)
         self.assertNotIn('HAS_SERVER_API_KEY', html)
 
+    def test_html_dashboard_call_action_buttons_and_stepper(self):
+        """Validates that table rows and cards have Call action buttons and modal includes execution stepper."""
+        html = render_html_dashboard(self.report)
+        self.assertIn("📞 Call", html)
+        self.assertIn("call-progress-card", html)
+        self.assertIn("call-progress-timer", html)
+        self.assertIn("pstep-1", html)
+        self.assertIn("pstep-4", html)
+        self.assertIn("fillFormFieldsFromCall", html)
+
+    def test_html_dashboard_live_backend_sync_elements(self):
+        """Validates that top navbar includes backend status indicator and syncWithBackend logic."""
+        html = render_html_dashboard(self.report)
+        self.assertIn('id="backend-status-indicator"', html)
+        self.assertIn('id="backend-status-text"', html)
+        self.assertIn("syncWithBackend", html)
+        self.assertIn("Sync Data", html)
+
 
 if __name__ == "__main__":
     unittest.main()

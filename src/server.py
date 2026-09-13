@@ -216,11 +216,17 @@ def get_dashboard_html():
 
 
 @app.get("/health")
+@app.head("/health")
 @app.get("/api/health")
+@app.head("/api/health")
 def health_check():
-    """Health check endpoint with SQLite database status."""
+    """Health check endpoint with SQLite database status and telephony readiness."""
     if not state.call_results:
         state.load_initial_data()
+    has_valid_api_key = bool(
+        CALLE_API_KEY
+        and CALLE_API_KEY not in ("your_calle_api_key_here", "calle_live_your_api_key_here")
+    )
     return {
         "status": "healthy",
         "service": "call-e-procurement-dashboard",
@@ -228,6 +234,8 @@ def health_check():
         "database": "sqlite",
         "database_records": state.db.count_calls(),
         "total_calls_loaded": len(state.call_results),
+        "has_calle_api_key": has_valid_api_key,
+        "telephony_mode": "live_ready" if has_valid_api_key else "simulation_fallback",
     }
 
 
@@ -464,6 +472,7 @@ def trigger_outbound_call(payload: TriggerCallPayload):
         "success": True,
         "message": msg,
         "is_live": not use_mock,
+        "telephony_mode": "live_calle" if not use_mock else "offline_simulator",
         "result": result.model_dump(),
     }
 
