@@ -138,6 +138,9 @@ class TestServerAPI(unittest.TestCase):
 
     def test_api_trigger_call_default_live(self):
         """POST /api/calls/trigger without 'live' field should default to live=True."""
+        from unittest.mock import patch
+        from src.models import CallResult, FulfillmentStatus, DelayReasonCategory
+
         initial_count = len(state.call_results)
         payload = {
             "supplier_id": "SUP-TEST-DEFAULT-LIVE",
@@ -152,12 +155,61 @@ class TestServerAPI(unittest.TestCase):
             "committed_delivery_date": "2026-09-30",
             "destination_facility": "DC-02 Chicago",
         }
-        resp = self.client.post("/api/calls/trigger", json=payload)
-        self.assertEqual(resp.status_code, 200)
-        data = resp.json()
-        self.assertTrue(data["success"])
-        self.assertEqual(data["result"]["order_id"], "PO-77777")
-        self.assertEqual(len(state.call_results), initial_count + 1)
+        mock_result = CallResult(
+            call_id="call_default_live_123",
+            order_id="PO-77777",
+            supplier_name="Default Live Supplier",
+            contact_name="David Clark",
+            phone_number="+1-555-099-5678",
+            call_status="COMPLETED",
+            fulfillment_status=FulfillmentStatus.ON_TIME,
+            original_delivery_date="2026-09-30",
+            revised_delivery_date="2026-09-30",
+            delay_days=0,
+            delay_category=DelayReasonCategory.NONE,
+            delay_notes="Verified on schedule.",
+            expedited_freight_cost_usd=0.0,
+            estimated_financial_impact_usd=0.0,
+            escalation_contact_name="David Clark",
+            escalation_contact_phone="+1-555-099-5678",
+            escalation_required=False,
+            call_duration_seconds=75,
+            raw_transcript="Agent: Hello.\nSupplier: On schedule.",
+        )
+        with patch("src.server.CALLE_API_KEY", "calle_live_server_default_key_7777"):
+            with patch("src.server.CalleSupplierAgentClient") as mock_client_cls:
+                mock_instance = mock_client_cls.return_value
+                mock_instance.execute_call.return_value = mock_result
+
+                resp = self.client.post("/api/calls/trigger", json=payload)
+                self.assertEqual(resp.status_code, 200)
+                data = resp.json()
+                self.assertTrue(data["success"])
+                self.assertTrue(data["is_live"])
+                self.assertEqual(data["result"]["order_id"], "PO-77777")
+                self.assertEqual(len(state.call_results), initial_count + 1)
+                mock_client_cls.assert_called_with(api_key="calle_live_server_default_key_7777", use_mock=False)
+
+    def test_api_trigger_call_live_missing_key_error(self):
+        """POST /api/calls/trigger with live=True and no server API key should return 400."""
+        from unittest.mock import patch
+
+        payload = {
+            "supplier_id": "SUP-NO-KEY",
+            "supplier_name": "No Key Supplier",
+            "contact_name": "Dave",
+            "phone_number": "+1-555-099-0000",
+            "order_id": "PO-NO-KEY",
+            "item_description": "Parts",
+            "quantity": 10,
+            "committed_delivery_date": "2026-09-30",
+            "live": True,
+        }
+        with patch("src.server.CALLE_API_KEY", ""):
+            resp = self.client.post("/api/calls/trigger", json=payload)
+            self.assertEqual(resp.status_code, 400)
+            data = resp.json()
+            self.assertIn("CALLE_API_KEY", data["detail"])
 
     def test_api_trigger_call_live_invalid_key_error(self):
         """POST /api/calls/trigger with invalid placeholder API key should return 400."""
@@ -176,7 +228,7 @@ class TestServerAPI(unittest.TestCase):
         resp = self.client.post("/api/calls/trigger", json=payload)
         self.assertEqual(resp.status_code, 400)
         data = resp.json()
-        self.assertIn("Valid CALLE_API_KEY is required", data["detail"])
+        self.assertIn("CALLE_API_KEY", data["detail"])
 
     def test_api_trigger_call_live_custom_key_dispatch(self):
         """POST /api/calls/trigger with custom valid API key should initiate live dispatch."""

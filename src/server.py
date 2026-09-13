@@ -427,15 +427,19 @@ def trigger_outbound_call(payload: TriggerCallPayload):
     is_live = payload.live
     use_mock = not is_live
 
-    if is_live and not has_valid_api_key:
-        if payload.api_key is not None or not ENABLE_MOCK_SIMULATOR:
+    if is_live:
+        import re
+        raw_digits = re.sub(r"\D", "", payload.phone_number or "")
+        if len(raw_digits) < 10:
             raise HTTPException(
                 status_code=400,
-                detail="Valid CALLE_API_KEY is required for live telephony calls. Please configure CALLE_API_KEY in the server .env environment file.",
+                detail="Invalid destination phone number: Outbound telephony requires a valid 10-digit or international E.164 phone number.",
             )
-        else:
-            print("[WARN] Live call requested but no valid CALLE_API_KEY configured. Falling back to offline simulator.")
-            use_mock = True
+        if not has_valid_api_key:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot dispatch live outbound call: Valid CALLE_API_KEY is not configured in the server environment. Please configure CALLE_API_KEY in the server .env file (/var/www/call-e-hackathon/.env), or switch Telephony Execution Mode to 'High-Fidelity Offline Simulator' to test offline without consuming live credits.",
+            )
 
     try:
         client = CalleSupplierAgentClient(api_key=effective_api_key, use_mock=use_mock)
@@ -510,13 +514,10 @@ def trigger_batch_workflow(payload: Optional[TriggerBatchWorkflowPayload] = None
     is_live = payload.live
     use_mock = not is_live
     if is_live and not has_valid_api_key:
-        if payload.api_key is not None or not ENABLE_MOCK_SIMULATOR:
-            raise HTTPException(
-                status_code=400,
-                detail="Valid CALLE_API_KEY is required for live telephony calls. Please configure CALLE_API_KEY in the server .env environment file.",
-            )
-        else:
-            use_mock = True
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot execute live batch verification: Valid CALLE_API_KEY is not configured in the server environment. Please configure CALLE_API_KEY in the server .env file (/var/www/call-e-hackathon/.env) or run with live=false for offline simulation.",
+        )
 
     client = CalleSupplierAgentClient(api_key=effective_api_key, use_mock=use_mock)
     new_results = []

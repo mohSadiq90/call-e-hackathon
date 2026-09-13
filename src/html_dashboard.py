@@ -905,6 +905,55 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       gap: 1rem;
     }}
 
+    .telephony-banner {{
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+      line-height: 1.45;
+    }}
+    .telephony-banner.warning {{
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      color: #fbbf24;
+    }}
+    .telephony-banner.ready {{
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #34d399;
+    }}
+
+    .execution-summary-bar {{
+      background: var(--bg-secondary);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }}
+
+    .call-error-box {{
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }}
+
+    .call-outcome-box {{
+      background: var(--bg-secondary);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }}
+
     /* Footer */
     footer.app-footer {{
       background: var(--bg-secondary);
@@ -1266,77 +1315,109 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
 
   <!-- Trigger New Outbound Call Modal -->
   <div id="new-call-modal" class="modal-overlay" onclick="handleNewCallBackdropClick(event)">
-    <div class="modal-dialog" style="max-width: 600px;">
+    <div class="modal-dialog" style="max-width: 620px;">
       <div class="modal-header">
         <div class="modal-title">
-          <h3><span>📞</span> Trigger Autonomous Outbound Call</h3>
+          <h3 id="new-call-modal-title"><span>📞</span> Trigger Autonomous Outbound Call</h3>
         </div>
         <button class="modal-close" onclick="closeNewCallModal()">✕</button>
       </div>
 
       <div class="modal-body">
-        <form id="new-call-form" onsubmit="executeManualCall(event)" style="display: flex; flex-direction: column; gap: 1rem;">
-          <div class="form-group">
-            <label class="form-label">Select Target Supplier</label>
-            <select id="form-supplier-select" class="form-select" onchange="populateSupplierFields()">
-              <!-- Populated dynamically -->
-            </select>
-          </div>
+        <!-- Telephony Readiness Notice Banner -->
+        <div id="server-telephony-banner" class="telephony-banner ready" style="display: none; margin-bottom: 1rem;">
+          <!-- Dynamically populated based on server /health status -->
+        </div>
 
-          <div class="form-grid-2">
+        <!-- VIEW 1: Call Configuration Form -->
+        <div id="new-call-form-view">
+          <form id="new-call-form" onsubmit="executeManualCall(event)" style="display: flex; flex-direction: column; gap: 1rem;">
             <div class="form-group">
-              <label class="form-label">Purchase Order ID</label>
-              <input type="text" id="form-po-id" class="form-input" required value="PO-99500" />
+              <label class="form-label">Select Target Supplier</label>
+              <select id="form-supplier-select" class="form-select" onchange="populateSupplierFields()">
+                <!-- Populated dynamically -->
+              </select>
             </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label">Purchase Order ID</label>
+                <input type="text" id="form-po-id" class="form-input" required value="PO-99500" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Committed Delivery Date</label>
+                <input type="date" id="form-delivery-date" class="form-input" required value="2026-09-25" />
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label">Supplier Contact Name</label>
+                <input type="text" id="form-contact-name" class="form-input" required placeholder="e.g. Sandra Bullock" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Supplier Phone Number</label>
+                <input type="text" id="form-phone" class="form-input" required placeholder="+1-555-019-4821" />
+                <span style="font-size: 0.71rem; color: var(--text-dim); margin-top: 0.15rem;">Tip: Change to your personal mobile number to test receiving the real call.</span>
+              </div>
+            </div>
+
             <div class="form-group">
-              <label class="form-label">Committed Delivery Date</label>
-              <input type="date" id="form-delivery-date" class="form-input" required value="2026-09-25" />
+              <label class="form-label">Item Description & Quantity</label>
+              <input type="text" id="form-item-desc" class="form-input" required placeholder="5,000 units Optical Transceivers" />
             </div>
-          </div>
 
-          <div class="form-grid-2">
             <div class="form-group">
-              <label class="form-label">Supplier Contact Name</label>
-              <input type="text" id="form-contact-name" class="form-input" required placeholder="e.g. Sandra Bullock" />
+              <label class="form-label">Telephony Execution Mode</label>
+              <select id="form-mode" class="form-select" onchange="handleModeChange()">
+                <option value="live" selected>Live CALL-E Telephony Network (Outbound Line)</option>
+                <option value="mock">High-Fidelity Offline Simulator (Instant / Zero API Cost)</option>
+              </select>
             </div>
-            <div class="form-group">
-              <label class="form-label">Supplier Phone Number</label>
-              <input type="text" id="form-phone" class="form-input" required placeholder="+1-555-019-4821" />
-              <span style="font-size: 0.71rem; color: var(--text-dim); margin-top: 0.15rem;">Tip: Change to your personal mobile number to test receiving the real call.</span>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem;">
+              <button type="button" class="btn btn-secondary" onclick="closeNewCallModal()">Cancel</button>
+              <button type="submit" class="btn btn-primary" id="btn-submit-call">
+                <span>🚀</span> Dispatch Call via CALL-E
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- VIEW 2: In-Modal Call Execution & Outcome Panel -->
+        <div id="call-execution-panel" style="display: none; flex-direction: column; gap: 1rem;">
+          <!-- Execution Target Summary Bar -->
+          <div class="execution-summary-bar">
+            <div>
+              <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Call Destination</div>
+              <div style="font-weight: 700; font-size: 0.88rem; color: var(--text-main); display: flex; align-items: center; gap: 0.4rem; margin-top: 2px;">
+                <span id="progress-dial-number">+1-555-019-4821</span>
+                <span style="color: var(--text-dim); font-weight: normal;">(<span id="progress-contact-name">Contact</span> - <span id="progress-order-id">PO</span>)</span>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              <span id="progress-mode-badge" style="font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; font-weight: 600; background: rgba(59, 130, 246, 0.15); color: var(--accent-blue);">Live Line</span>
+              <span id="call-progress-timer" style="font-family: monospace; font-size: 0.88rem; color: var(--accent-cyan); font-weight: 700;">00:00</span>
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Item Description & Quantity</label>
-            <input type="text" id="form-item-desc" class="form-input" required placeholder="5,000 units Optical Transceivers" />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Telephony Execution Mode</label>
-            <select id="form-mode" class="form-select">
-              <option value="live" selected>Live CALL-E Telephony Network (Outbound Line)</option>
-              <option value="mock">High-Fidelity Offline Simulator (Instant / Zero API Cost)</option>
-            </select>
-          </div>
-
-          <!-- Live Call Execution Progress Stepper (animated during dispatch) -->
-          <div id="call-progress-card" style="display: none; background: var(--bg-secondary); border: 1px solid var(--accent-blue); border-radius: var(--radius-md); padding: 1.15rem; flex-direction: column; gap: 0.75rem;">
-            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--card-border); padding-bottom: 0.6rem;">
-              <div style="font-weight: 700; font-size: 0.88rem; display: flex; align-items: center; gap: 0.45rem;">
+          <!-- Live Call Execution Progress Stepper -->
+          <div id="call-progress-card" style="display: flex; background: var(--bg-secondary); border: 1px solid var(--accent-blue); border-radius: var(--radius-md); padding: 1rem 1.15rem; flex-direction: column; gap: 0.7rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem;">
+              <div style="font-weight: 700; font-size: 0.86rem; display: flex; align-items: center; gap: 0.45rem;">
                 <span class="pulse-dot" id="progress-pulse-dot" style="background-color: var(--accent-blue);"></span>
                 <span id="call-progress-title">Telephony Execution in Progress...</span>
               </div>
-              <span id="call-progress-timer" style="font-family: monospace; font-size: 0.82rem; color: var(--accent-cyan); font-weight: 700;">00:00</span>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 0.55rem; font-size: 0.8rem;">
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.8rem;">
               <div id="pstep-1" style="display: flex; align-items: center; gap: 0.45rem; color: var(--text-muted);">
                 <span id="picon-1" style="font-size: 0.95rem;">⏳</span>
                 <span id="plbl-1">1. Transmitting parameters to Python FastAPI backend...</span>
               </div>
               <div id="pstep-2" style="display: flex; align-items: center; gap: 0.45rem; color: var(--text-muted);">
                 <span id="picon-2" style="font-size: 0.95rem;">⏳</span>
-                <span id="plbl-2">2. Initializing CALL-E telephony client & dispatching outbound call task...</span>
+                <span id="plbl-2">2. Initializing CALL-E telephony client & carrier line...</span>
               </div>
               <div id="pstep-3" style="display: flex; align-items: center; gap: 0.45rem; color: var(--text-muted);">
                 <span id="picon-3" style="font-size: 0.95rem;">⏳</span>
@@ -1349,13 +1430,71 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
             </div>
           </div>
 
-          <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem;">
-            <button type="button" class="btn btn-secondary" onclick="closeNewCallModal()">Cancel</button>
-            <button type="submit" class="btn btn-primary" id="btn-submit-call">
-              <span>🚀</span> Dispatch Call via CALL-E
-            </button>
+          <!-- Error Feedback Container (shown when live call halts or server error) -->
+          <div id="call-error-box" class="call-error-box" style="display: none;">
+            <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+              <span style="font-size: 1.3rem;">❌</span>
+              <div style="flex: 1;">
+                <div style="font-weight: 700; font-size: 0.9rem; color: #f87171;" id="call-error-title">Telephony Dispatch Halted</div>
+                <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.35rem; line-height: 1.45;" id="call-error-message"></div>
+                <div style="font-size: 0.76rem; color: var(--text-dim); margin-top: 0.5rem; background: rgba(0,0,0,0.2); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm);" id="call-error-guide">
+                  <strong>Why did this happen?</strong> Live calls to mobile numbers require a valid <code>CALLE_API_KEY</code> configured in <code>/var/www/call-e-hackathon/.env</code> on the server. You can test the complete verification flow immediately using the <strong>Offline Simulator</strong>.
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.5rem; flex-wrap: wrap;">
+              <button type="button" class="btn btn-secondary" onclick="returnToFormView()">← Back to Edit Form</button>
+              <button type="button" class="btn btn-primary" onclick="switchToSimulatorAndRun()">⚡ Run in Offline Simulator</button>
+              <button type="button" class="btn btn-secondary" onclick="closeNewCallModal()">Close</button>
+            </div>
           </div>
-        </form>
+
+          <!-- Success & Dialogue Outcome Container (shown when call finishes) -->
+          <div id="call-success-box" class="call-outcome-box" style="display: none;">
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--card-border); padding-bottom: 0.6rem;">
+              <div style="font-weight: 700; font-size: 0.9rem; color: var(--accent-green); display: flex; align-items: center; gap: 0.4rem;">
+                <span>✅</span> <span id="call-success-title">Verification Call Completed</span>
+              </div>
+              <span id="call-success-status-pill" class="badge"></span>
+            </div>
+
+            <!-- Structured Findings Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.6rem; font-size: 0.78rem;">
+              <div style="background: var(--bg-primary); padding: 0.5rem 0.7rem; border-radius: var(--radius-sm);">
+                <div style="color: var(--text-muted); font-size: 0.68rem; text-transform: uppercase;">Revised Date</div>
+                <div id="outcome-revised-date" style="font-weight: 700; margin-top: 2px;"></div>
+              </div>
+              <div style="background: var(--bg-primary); padding: 0.5rem 0.7rem; border-radius: var(--radius-sm);">
+                <div style="color: var(--text-muted); font-size: 0.68rem; text-transform: uppercase;">Delay Impact</div>
+                <div id="outcome-delay-days" style="font-weight: 700; margin-top: 2px;"></div>
+              </div>
+              <div style="background: var(--bg-primary); padding: 0.5rem 0.7rem; border-radius: var(--radius-sm);">
+                <div style="color: var(--text-muted); font-size: 0.68rem; text-transform: uppercase;">Root Cause</div>
+                <div id="outcome-category" style="font-weight: 700; margin-top: 2px;"></div>
+              </div>
+              <div style="background: var(--bg-primary); padding: 0.5rem 0.7rem; border-radius: var(--radius-sm);">
+                <div style="color: var(--text-muted); font-size: 0.68rem; text-transform: uppercase;">Financial Exposure</div>
+                <div id="outcome-impact" style="font-weight: 700; color: #f87171; margin-top: 2px;"></div>
+              </div>
+            </div>
+
+            <!-- Conversational Transcript (shown directly in the same modal) -->
+            <div>
+              <div style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; justify-content: space-between;">
+                <span>💬 Conversational Dialogue Transcript</span>
+                <span id="outcome-transcript-badge" style="font-size: 0.68rem; font-weight: normal; color: var(--text-dim);"></span>
+              </div>
+              <div class="transcript-box" id="call-result-transcript" style="max-height: 220px; overflow-y: auto;">
+                <!-- Chat bubbles rendered here -->
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.5rem; flex-wrap: wrap;">
+              <button type="button" class="btn btn-secondary" onclick="returnToFormView(true)">📞 Trigger Another Call</button>
+              <button type="button" class="btn btn-primary" onclick="closeNewCallModal()">✓ Close & View in Dashboard</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1845,18 +1984,40 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       }});
     }}
 
-    // Trigger New Call Modal
-    function openNewCallModal(orderId = null) {{
-      populateSupplierSelect(orderId);
-      const card = document.getElementById('call-progress-card');
-      if (card) card.style.display = 'none';
-      const form = document.getElementById('new-call-form');
-      if (form) form.style.display = 'flex';
-      const btn = document.getElementById('btn-submit-call');
-      if (btn) {{
-        btn.disabled = false;
-        btn.innerHTML = '<span>🚀</span> Dispatch Call via CALL-E';
+    // Telephony Readiness Notice Updater
+    function updateServerTelephonyBanner() {{
+      const banner = document.getElementById('server-telephony-banner');
+      if (!banner) return;
+      const modeSelect = document.getElementById('form-mode');
+      const mode = modeSelect ? modeSelect.value : 'live';
+
+      if (mode === 'mock') {{
+        banner.style.display = 'block';
+        banner.className = 'telephony-banner ready';
+        banner.innerHTML = '<span class="pulse-dot" style="background:#10b981; display:inline-block;"></span> <strong>Offline Simulator Active:</strong> Instant deterministic simulation with zero telephony API cost.';
+        return;
       }}
+
+      if (window.serverHasApiKey) {{
+        banner.style.display = 'block';
+        banner.className = 'telephony-banner ready';
+        banner.innerHTML = '<span class="pulse-dot" style="background:#10b981; display:inline-block;"></span> <strong>Carrier Line Active:</strong> Server CALLE_API_KEY loaded in environment. Outbound voice calls ready to dispatch.';
+      }} else {{
+        banner.style.display = 'block';
+        banner.className = 'telephony-banner warning';
+        banner.innerHTML = '<strong>⚠️ Server Telephony Notice:</strong> Server has no <code>CALLE_API_KEY</code> configured in <code>.env</code>. Live calls to real mobile numbers will halt until an API key is configured. Switch mode below to <strong>Offline Simulator</strong> to test the full flow without live API credits.';
+      }}
+    }}
+
+    function handleModeChange() {{
+      updateServerTelephonyBanner();
+    }}
+
+    // Trigger New Call Modal Controls
+    function openNewCallModal(orderId = null) {{
+      returnToFormView(orderId === null);
+      populateSupplierSelect(orderId);
+      updateServerTelephonyBanner();
       document.getElementById('new-call-modal').classList.add('active');
     }}
 
@@ -1868,26 +2029,92 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       if (e.target.id === 'new-call-modal') closeNewCallModal();
     }}
 
-    async function executeManualCall(e) {{
-      e.preventDefault();
+    function returnToFormView(reset = false) {{
+      const formView = document.getElementById('new-call-form-view');
+      const execPanel = document.getElementById('call-execution-panel');
+      const errorBox = document.getElementById('call-error-box');
+      const successBox = document.getElementById('call-success-box');
+      const modalTitle = document.getElementById('new-call-modal-title');
       const btn = document.getElementById('btn-submit-call');
-      btn.disabled = true;
 
-      const poId = document.getElementById('form-po-id').value;
+      if (formView) formView.style.display = 'block';
+      if (execPanel) execPanel.style.display = 'none';
+      if (errorBox) errorBox.style.display = 'none';
+      if (successBox) successBox.style.display = 'none';
+      if (modalTitle) modalTitle.innerHTML = '<span>📞</span> Trigger Autonomous Outbound Call';
+      if (btn) {{
+        btn.disabled = false;
+        btn.innerHTML = '<span>🚀</span> Dispatch Call via CALL-E';
+      }}
+
+      if (reset) {{
+        populateSupplierSelect();
+      }}
+      updateServerTelephonyBanner();
+    }}
+
+    function switchToSimulatorAndRun() {{
+      const modeSelect = document.getElementById('form-mode');
+      if (modeSelect) modeSelect.value = 'mock';
+      updateServerTelephonyBanner();
+      executeManualCall();
+    }}
+
+    async function executeManualCall(e) {{
+      if (e && e.preventDefault) e.preventDefault();
+      const btn = document.getElementById('btn-submit-call');
+      if (btn) btn.disabled = true;
+
+      const poId = document.getElementById('form-po-id').value.trim();
       const deliveryDate = document.getElementById('form-delivery-date').value;
-      const contactName = document.getElementById('form-contact-name').value;
-      const phone = document.getElementById('form-phone').value;
-      const itemDesc = document.getElementById('form-item-desc').value;
+      const contactName = document.getElementById('form-contact-name').value.trim();
+      const phone = document.getElementById('form-phone').value.trim();
+      const itemDesc = document.getElementById('form-item-desc').value.trim();
       const mode = document.getElementById('form-mode').value;
       const select = document.getElementById('form-supplier-select');
       const supplierName = (select.value === '__CUSTOM__' || !select.value) ? 'Custom Supplier Logistics' : select.value;
 
-      // Display and reset Real-Time Call Progress Card
+      // Validate phone number
+      const phoneDigits = phone.replace(/\\D/g, '');
+      if (mode === 'live' && phoneDigits.length < 10) {{
+        alert('Please enter a valid phone number with area code (at least 10 digits) to dispatch an outbound call.');
+        if (btn) btn.disabled = false;
+        return;
+      }}
+
+      // Transition to In-Modal Call Execution & Monitoring Panel
+      const formView = document.getElementById('new-call-form-view');
+      const execPanel = document.getElementById('call-execution-panel');
       const progressCard = document.getElementById('call-progress-card');
+      const errorBox = document.getElementById('call-error-box');
+      const successBox = document.getElementById('call-success-box');
       const timerElem = document.getElementById('call-progress-timer');
-      const dialNumberElem = document.getElementById('progress-dial-number');
-      if (dialNumberElem) dialNumberElem.textContent = phone;
+      const progressTitle = document.getElementById('call-progress-title');
+      const modalTitle = document.getElementById('new-call-modal-title');
+
+      if (formView) formView.style.display = 'none';
+      if (execPanel) execPanel.style.display = 'flex';
       if (progressCard) progressCard.style.display = 'flex';
+      if (errorBox) errorBox.style.display = 'none';
+      if (successBox) successBox.style.display = 'none';
+
+      if (modalTitle) modalTitle.innerHTML = '<span>📞</span> Outbound Verification Call Monitor';
+      if (progressTitle) progressTitle.textContent = mode === 'live' ? 'Telephony Execution in Progress...' : 'Offline Simulation in Progress...';
+
+      // Update Summary Bar
+      const dialNumberElem = document.getElementById('progress-dial-number');
+      const contactElem = document.getElementById('progress-contact-name');
+      const orderElem = document.getElementById('progress-order-id');
+      const modeBadge = document.getElementById('progress-mode-badge');
+
+      if (dialNumberElem) dialNumberElem.textContent = phone;
+      if (contactElem) contactElem.textContent = contactName;
+      if (orderElem) orderElem.textContent = poId;
+      if (modeBadge) {{
+        modeBadge.textContent = mode === 'live' ? 'Live Telephony Line' : 'Offline Simulator';
+        modeBadge.style.color = mode === 'live' ? 'var(--accent-blue)' : 'var(--accent-green)';
+        modeBadge.style.background = mode === 'live' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(16, 185, 129, 0.15)';
+      }}
 
       function setStep(num, state, msg = null) {{
         const icon = document.getElementById(`picon-${{num}}`);
@@ -1930,15 +2157,15 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
 
       setTimeout(() => {{
         setStep(1, 'done', '1. Connected to Python FastAPI backend on VPS.');
-        setStep(2, 'active', mode === 'live' ? '2. Initializing CALL-E telephony SDK & connecting carrier line...' : '2. Initializing high-fidelity offline simulation engine...');
-      }}, 400);
+        setStep(2, 'active', mode === 'live' ? '2. Initializing CALL-E telephony SDK & connecting carrier trunk...' : '2. Initializing high-fidelity offline simulation engine...');
+      }}, 300);
 
       setTimeout(() => {{
         setStep(2, 'done', mode === 'live' ? '2. Dispatched task to CALL-E API (Carrier network line open).' : '2. Offline simulation engine armed.');
         setStep(3, 'active', mode === 'live' ? `3. Carrier dialing <strong style="color:var(--text-main);">${{phone}}</strong> & AI voice agent in-flight...` : `3. Simulating conversational dialogue with ${{contactName}}...`);
-      }}, 1200);
+      }}, 900);
 
-      // Call Backend API or Simulate
+      // Call Backend API or simulate
       let newRecord = null;
       try {{
         const resp = await fetch('/api/calls/trigger', {{
@@ -1961,67 +2188,52 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
         if (resp.ok) {{
           const data = await resp.json();
           newRecord = data.result;
-          setStep(3, 'done', mode === 'live' && data.is_live ? `3. Carrier call completed to ${{phone}} (Duration: ${{newRecord.call_duration_seconds}}s).` : `3. Telephony dialogue completed.`);
-          setStep(4, 'active', '4. Synchronizing transcript, extracting results & persisting to SQLite DB...');
-          if (data.is_live) {{
-            console.log('✓ Live call dispatched via CALL-E:', newRecord.call_id);
-          }}
+          setStep(3, 'done', mode === 'live' && data.is_live ? `3. Carrier call completed to ${{phone}} (${{newRecord.call_duration_seconds}}s).` : `3. Telephony dialogue completed (${{newRecord.call_duration_seconds}}s).`);
+          setStep(4, 'done', '4. Structured fulfillment results persisted to SQLite DB & synced.');
+          if (progressTitle) progressTitle.textContent = 'Telephony Execution Completed';
         }} else {{
           const errData = await resp.json().catch(() => ({{}}));
           const errMsg = errData.detail || resp.statusText || 'Call dispatch failed';
-          setStep(3, 'error', `3. Telephony execution halted: ${{errMsg}}`);
-          alert('❌ Call Dispatch Notice:\\n\\n' + errMsg);
-          btn.innerHTML = '<span>🚀</span> Dispatch Call via CALL-E';
-          btn.disabled = false;
+          setStep(2, 'error', `2. Telephony dispatch halted.`);
+          setStep(3, 'error', `3. Carrier call blocked: ${{errMsg}}`);
+          if (progressTitle) progressTitle.textContent = 'Call Dispatch Halted';
+
+          // Show in-modal error box
+          if (errorBox) {{
+            errorBox.style.display = 'flex';
+            const msgElem = document.getElementById('call-error-message');
+            if (msgElem) msgElem.textContent = errMsg;
+          }}
+          if (btn) {{
+            btn.innerHTML = '<span>🚀</span> Dispatch Call via CALL-E';
+            btn.disabled = false;
+          }}
           return;
         }}
       }} catch (err) {{
         clearInterval(timerInterval);
         console.log('Backend connection error:', err);
-        if (mode === 'live') {{
-          setStep(1, 'error', '1. Failed to connect to Python backend on VPS: ' + err.message);
-          alert('❌ Network Error:\\n\\nCould not connect to Python FastAPI backend on VPS: ' + err.message);
+        setStep(1, 'error', '1. Failed to connect to Python backend on VPS: ' + err.message);
+        if (progressTitle) progressTitle.textContent = 'Connection Error';
+        if (errorBox) {{
+          errorBox.style.display = 'flex';
+          const msgElem = document.getElementById('call-error-message');
+          if (msgElem) msgElem.textContent = 'Could not connect to Python FastAPI backend: ' + err.message;
+        }}
+        if (btn) {{
           btn.innerHTML = '<span>🚀</span> Dispatch Call via CALL-E';
           btn.disabled = false;
-          return;
         }}
+        return;
       }}
 
-      if (!newRecord) {{
-        // Client-side fallback simulation
-        newRecord = {{
-          call_id: 'call_' + Math.random().toString(36).substring(2, 10),
-          order_id: poId,
-          supplier_name: supplierName,
-          contact_name: contactName,
-          phone_number: phone,
-          call_status: 'COMPLETED',
-          fulfillment_status: 'ON_TIME',
-          original_delivery_date: deliveryDate,
-          revised_delivery_date: deliveryDate,
-          delay_days: 0,
-          delay_category: 'NONE',
-          delay_notes: 'All items confirmed packed and scheduled for delivery on committed date.',
-          expedited_freight_cost_usd: 0.0,
-          estimated_financial_impact_usd: 0.0,
-          escalation_contact_name: contactName,
-          escalation_contact_phone: phone,
-          escalation_required: false,
-          call_duration_seconds: 78,
-          raw_transcript: `Agent: Hello, this is Alex calling from Enterprise Operations regarding Purchase Order ${{poId}}.\\nSupplier: Yes Alex, this is ${{contactName}}. Everything is confirmed on schedule for ${{deliveryDate}}.\\nAgent: Thank you for confirming. I have logged this as on schedule. Goodbye!`
-        }};
-      }}
-
-      setStep(4, 'done', '4. Structured conversation persisted to SQLite DB & synced.');
-
-      // Prepend to calls array
+      // Prepend to calls array & sync UI
       allCalls.unshift(newRecord);
       reportState.total_orders_checked += 1;
       if (newRecord.fulfillment_status === 'ON_TIME') reportState.on_time_count += 1;
       if (newRecord.fulfillment_status === 'DELAYED') reportState.delayed_count += 1;
       reportState.on_time_percentage = Math.round((reportState.on_time_count / reportState.total_orders_checked) * 100);
 
-      // Refresh UI synchronously
       document.getElementById('kpi-total-orders').textContent = reportState.total_orders_checked;
       document.getElementById('kpi-on-time-pct').textContent = reportState.on_time_percentage + '%';
       document.getElementById('kpi-on-time-cnt').textContent = reportState.on_time_count;
@@ -2030,12 +2242,54 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       updateAnalytics();
       applyFilters();
 
-      setTimeout(() => {{
+      // Display Structured Findings & Transcript directly in this modal!
+      if (successBox) {{
+        successBox.style.display = 'flex';
+        const titleElem = document.getElementById('call-success-title');
+        const pillElem = document.getElementById('call-success-status-pill');
+        const dateElem = document.getElementById('outcome-revised-date');
+        const delayElem = document.getElementById('outcome-delay-days');
+        const catElem = document.getElementById('outcome-category');
+        const impElem = document.getElementById('outcome-impact');
+        const trBadge = document.getElementById('outcome-transcript-badge');
+        const trBox = document.getElementById('call-result-transcript');
+
+        if (titleElem) titleElem.textContent = mode === 'live' ? `Live Telephony Call Completed (${{newRecord.call_duration_seconds}}s)` : `Offline Simulation Completed (${{newRecord.call_duration_seconds}}s)`;
+        if (pillElem) {{
+          pillElem.className = `badge badge-${{newRecord.fulfillment_status.toLowerCase()}}`;
+          pillElem.textContent = newRecord.fulfillment_status.replace(/_/g, ' ');
+        }}
+        if (dateElem) dateElem.textContent = newRecord.revised_delivery_date || newRecord.original_delivery_date;
+        if (delayElem) delayElem.textContent = newRecord.delay_days > 0 ? `+${{newRecord.delay_days}} days` : 'On schedule';
+        if (catElem) catElem.textContent = (newRecord.delay_category || 'NONE').replace(/_/g, ' ');
+        if (impElem) impElem.textContent = '$' + Number(newRecord.estimated_financial_impact_usd || 0).toLocaleString(undefined, {{minimumFractionDigits: 2, maximumFractionDigits: 2}});
+        if (trBadge) trBadge.textContent = mode === 'live' ? '🎙️ Verified Telephony Line' : '⚡ Simulated Scenario';
+
+        if (trBox) {{
+          trBox.innerHTML = '';
+          const transcriptLines = (newRecord.raw_transcript || '').split('\\n').filter(l => l.trim().length > 0);
+          if (transcriptLines.length === 0) {{
+            trBox.innerHTML = '<div style="color:var(--text-muted); padding:1rem; text-align:center;">No conversational dialogue recorded.</div>';
+          }} else {{
+            transcriptLines.forEach(line => {{
+              const bubble = document.createElement('div');
+              if (line.toLowerCase().startsWith('agent:') || line.toLowerCase().startsWith('alex:')) {{
+                bubble.className = 'chat-bubble agent';
+                bubble.innerHTML = `<div class="speaker-name agent-lbl">🤖 Alex (Enterprise AI Agent)</div><div>${{line.replace(/^(Agent|Alex):\\s*/i, '')}}</div>`;
+              }} else {{
+                bubble.className = 'chat-bubble supplier';
+                bubble.innerHTML = `<div class="speaker-name supplier-lbl">👤 ${{contactName || 'Supplier Dispatcher'}}</div><div>${{line.replace(/^(Supplier|Automated System|Representative|System):\\s*/i, '')}}</div>`;
+              }}
+              trBox.appendChild(bubble);
+            }});
+          }}
+        }}
+      }}
+
+      if (btn) {{
         btn.innerHTML = '<span>🚀</span> Dispatch Call via CALL-E';
         btn.disabled = false;
-        closeNewCallModal();
-        openCallModal(newRecord.call_id);
-      }}, 600);
+      }}
     }}
 
     // Export Helpers
@@ -2097,6 +2351,8 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
 
         if (healthResp && healthResp.ok) {{
           const hData = await healthResp.json();
+          window.serverHasApiKey = Boolean(hData.has_calle_api_key);
+          updateServerTelephonyBanner();
           if (ind && txt) {{
             ind.style.borderColor = 'rgba(16, 185, 129, 0.3)';
             ind.style.background = 'rgba(16, 185, 129, 0.1)';

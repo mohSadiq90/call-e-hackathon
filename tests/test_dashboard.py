@@ -255,6 +255,21 @@ class TestHtmlDashboard(unittest.TestCase):
         self.assertIn("syncWithBackend", html)
         self.assertIn("Sync Data", html)
 
+    def test_html_dashboard_unified_modal_flow(self):
+        """Validates unified in-modal layout preventing multi-popup flickering and automatic popup jumps."""
+        html = render_html_dashboard(self.report)
+        self.assertIn('id="new-call-form-view"', html)
+        self.assertIn('id="call-execution-panel"', html)
+        self.assertIn('id="call-error-box"', html)
+        self.assertIn('id="call-success-box"', html)
+        self.assertIn('id="server-telephony-banner"', html)
+        self.assertIn('id="call-result-transcript"', html)
+        self.assertIn("returnToFormView", html)
+        self.assertIn("switchToSimulatorAndRun", html)
+        self.assertIn("updateServerTelephonyBanner", html)
+        # Ensure executeManualCall does NOT auto-close and openCallModal
+        self.assertNotIn("openCallModal(newRecord.call_id)", html)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -705,6 +705,48 @@
     1. Deploy latest codebase to Hostinger VPS (`calle.fyro.cloud`) and restart systemd service.
     2. Respond to user <@U06FVANTNHL> with concise Slack report.
 
+### [2026-09-13] - Phase 16: Unified Single-Modal Flow, Elimination of Popup Jumping & Explicit Live Telephony Error Handling
+- **Issue Diagnosis & Root Cause Analysis**:
+  - User reported: *"when we trigger a call from the trigger verification call button and dispatch call CTA via Call E, it opens another pop-up and closes it automatically. There is another pop-up which opens, and maybe a default conversation history is populated on another pop-up. This is broken. It's not a well-structured flow and the user experience is broken. The trigger verification call pop-up closes, another pop-up opens that shows the status for a blink of an eye, and then it closes automatically and opens another pop-up, which is the conversation pop-up. Please fix the flow. I'm not sure why it's failing and still I don't see a call trigger to my mobile number."*
+  - **Root Causes Identified**:
+    1. **Multi-Popup Jumping & Closing**: Upon clicking "Dispatch Call via CALL-E", the code displayed `#call-progress-card` inside `#new-call-modal`, but after a 600ms timeout called `closeNewCallModal()` and then called `openCallModal()`, closing the trigger dialog and opening the conversation modal on top. This created an abrupt, confusing experience of multiple popups appearing and disappearing.
+    2. **Silent Mock Fallback on Live Telephony Failure**: In `src/server.py`, when a live call was requested but `CALLE_API_KEY` was not configured or placeholder, the backend logged a warning and silently fell back to the offline mock simulator (`use_mock = True`). The mock simulator finished instantaneously with fake conversation data, giving the false illusion of success while never contacting the carrier network or dialing the user's mobile number.
+    3. **Misleading Default Conversation Display**: When the silent fallback succeeded, the auto-opened conversation modal displayed default mock conversation history rather than notifying the operator of missing server telephony credentials.
+- **Features & Enhancements**:
+  - **Unified Single-Modal Workflow (`src/html_dashboard.py`, `output/procurement_dashboard.html`)**:
+    - Re-architected `#new-call-modal` to encompass the complete lifecycle in a single dialog window without closing or opening separate popups.
+    - Added `#new-call-form-view` (configuration) and `#call-execution-panel` (in-modal monitor & outcome viewer).
+    - When clicking "Dispatch Call via CALL-E", the form transitions smoothly into the Call Monitor panel inside the same modal.
+    - Integrated in-modal Execution Summary Bar (destination phone, contact, PO ID, execution mode, and live ticking timer).
+    - **In-Modal Error Card (`#call-error-box`)**: If a dispatch halts or errors, the modal remains open and presents the exact error message, guidance on why live calls require `CALLE_API_KEY` in `/var/www/call-e-hackathon/.env`, and recovery buttons (`← Back to Edit Form`, `⚡ Run in Offline Simulator`, and `Close`).
+    - **In-Modal Success & Dialogue Card (`#call-success-box`)**: When a call completes, structured outcome pills (revised date, delay, root cause, financial impact) and the conversational dialogue bubbles are displayed directly inside the same modal.
+    - Completely eliminated `openCallModal()` auto-invocations and `closeNewCallModal()` timeouts from call dispatch.
+  - **Dynamic Telephony Readiness Banner (`src/html_dashboard.py`)**:
+    - Added `#server-telephony-banner` checking `has_calle_api_key` from `/health`.
+    - Proactively informs operators whether the server carrier trunk is active or if `CALLE_API_KEY` is needed for live outbound calls.
+  - **Explicit Live Telephony Error Handling (`src/server.py`)**:
+    - Removed silent fallback to mock simulator in `trigger_outbound_call` and `trigger_batch_workflow`.
+    - When live calling is requested without a valid `CALLE_API_KEY`, raises clear `HTTPException(status_code=400)` with actionable guidance rather than masking with mock data.
+    - Added phone number format validation requiring at least 10 digits before dispatching to carrier network.
+- **Automated Testing Suite Expansion (`tests/`)**:
+  - Added `test_html_dashboard_unified_modal_flow` in `tests/test_dashboard.py` asserting unified layout elements and absence of auto-closing popup jumps.
+  - Added `test_api_trigger_call_live_missing_key_error` in `tests/test_server.py` asserting HTTP 400 when live calling without server key.
+  - Updated `test_api_trigger_call_default_live` to mock live SDK dispatch and verify live default behavior.
+  - Expanded test suite to **69 passing tests (100% pass rate in 0.46s)**.
+- **Key Files Modified**:
+  - `src/html_dashboard.py`
+  - `src/server.py`
+  - `output/procurement_dashboard.html`
+  - `tests/test_dashboard.py`
+  - `tests/test_server.py`
+  - `PROGRESS.md`
+- **Current Status & Next Steps**:
+  - **Current Status**: Unified single-modal workflow implemented, popup flicker eliminated, explicit live error reporting verified, 69/69 unit tests passing.
+  - **Next Steps**:
+    1. Deploy latest codebase to Hostinger VPS (`calle.fyro.cloud`) and restart systemd service.
+    2. Respond to user <@U06FVANTNHL> with concise Slack report.
+
+
 
 
 
