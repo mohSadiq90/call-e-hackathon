@@ -72,7 +72,7 @@ python3 main.py --mock
   "delay_reason_details": "Polymer resin adhesive shipment delayed at port.",
   "estimated_financial_exposure_usd": 8350.0,
   "escalation_contact_name": "Maria Gomez",
-  "escalation_contact_phone": "+1-555-014-9923",
+  "escalation_contact_phone": "+1-555-***-9923",
   "requires_escalation": true
 }
 ```
@@ -80,3 +80,11 @@ python3 main.py --mock
 ### Procurement CSV Report
 Columns:
 `call_id,supplier_id,supplier_name,po_id,original_date,revised_date,delay_days,status,category,financial_exposure_usd,escalation_lead,phone`
+
+---
+
+## Safety, Authorization & Cancellation Boundaries
+1. **Explicit Operator Authorization:** Requires explicit per-run operator intent (`authorization_confirmed: true`) and destination authorization (`destination_authorized: true`) before initiating calls.
+2. **Ambiguity Stop Contract:** Fails closed to a human operator when PO, vendor, or contact phone parameters are ambiguous or unverified.
+3. **Redaction & Privacy Masking:** All user-facing telephone numbers and provider-specific telemetry are masked (e.g. `+1-555-***-9923`).
+4. **Cancellation Limits:** The CALL-E Calls API does not support in-flight call cancellation once dispatched to the carrier network. Closing the UI or process does not recall active calls; keep verification waves small.
