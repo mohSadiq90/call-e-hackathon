@@ -418,8 +418,57 @@
 - **Current Status & Next Steps**:
   - **Current Status**: All search enhancements and live Hostinger VPS deployment completed and verified. 54/54 automated tests passing.
   - **Next Steps**:
-    1. Record final 3-minute video walkthrough showcasing live audio playback, transcript scrubbing, and procurement KPI calculations on `https://calle.fyro.cloud`.
-    2. Submit Devpost entry with live URL and YouTube video link.
+    1. Streamline demo dataset and remove broken audio playback controls per user feedback.
+
+### [2026-09-13] - Phase 9: Demo Records Streamlining (2 Per Category) & Audio Playback UI Removal
+- **Features & Enhancements**:
+  - **Curated Demo Dataset (2 Records Per Root Cause Category)**:
+    - Reduced overwhelming 53 demo records down to a concise, balanced 14-record operational dataset.
+    - Curated exactly 2 records per delay root cause taxonomy category:
+      - `NONE`: 2 on-time fulfillment orders (`PO-91001`, `PO-91004`).
+      - `RAW_MATERIAL_SHORTAGE`: 2 orders (`PO-88219` MicroSilicon Global Corp verified real call + `PO-91002` Pacific Packaging partial dispatch).
+      - `QUALITY_CONTROL_HOLD`: 2 orders (`PO-91003` Global Precision Machining + `PO-91025` NexGen Circuitry partial dispatch).
+      - `PRODUCTION_HALT`: 2 orders (`PO-91007` Titan Heavy Dynamics + `PO-91022` Mach Precision Castings).
+      - `LOGISTICS_PORT_CONGESTION`: 2 orders (`PO-91005` Zenith Hydraulics + `PO-91031` OptoCore Photonics).
+      - `WEATHER_FORCE_MAJEURE`: 2 orders (`PO-91014` Cascade Thermal + `PO-91053` Gulf Coast Chemical Logistics).
+      - `OTHER` (Unreachable): 2 orders (`PO-91015` Summit Precision Seals + `PO-91038` Cascade Paperboard Systems).
+    - Status distribution: 2 On-Time, 8 Delayed, 2 Partial Dispatch, 2 Unreachable.
+    - Updated `scripts/generate_enterprise_data.py`, `data/suppliers_enterprise_50.json`, and `data/suppliers_enterprise_50.csv`.
+  - **Audio Playback UI Removal (`src/html_dashboard.py`)**:
+    - Removed HTML5 audio element `<audio id="modal-audio-element">`, waveform visualizer, and playback controls (`.audio-player`, play/pause, restart, speed cycle, scrubbing listener) from the call modal to eliminate judging defects.
+    - Cleaned up Table View and Card View: removed `🎙️ REC` badges and changed action button from `▶ Listen` to `View Call`.
+    - Retained structured conversational dialogue transcript viewer with speaker bubbles, ensuring complete transparency into autonomous call dialogue.
+    - Updated panel taxonomy description from "audio dialogue" to "telephony dialogue".
+  - **Engine & Server State Refactoring (`src/server.py`, `src/calle_client.py`)**:
+    - Fixed `calle_client.py` parsing logic to ensure `ON_TIME` scenarios always strictly map to `delay_category: NONE` and zero freight cost.
+    - Updated `_sync_verified_real_call()` to match by order ID (`PO-88219`) in-place, keeping total demo calls at exactly 14.
+    - Removed hardcoded `>= 50` record constraints from cache and database loading routines.
+    - Added `output_dir` support in `DashboardBackendState` allowing isolated testing.
+  - **Test Suite Isolation & Verification (`tests/`)**:
+    - Isolated `TestServerAPI` and `TestDatabaseServerIntegration` to write temporary SQLite DBs and test reports to `/tmp`, preventing test suites from overwriting demo data in `output/`.
+    - Updated `tests/test_dashboard.py` to assert audio player controls are removed while conversational transcript rendering remains intact.
+    - Verified all 54 tests passing with 100% success rate (`54/54 passed in 0.42s`).
+- **Key Files Created / Modified**:
+  - `scripts/generate_enterprise_data.py`
+  - `data/suppliers_enterprise_50.json`
+  - `data/suppliers_enterprise_50.csv`
+  - `src/html_dashboard.py`
+  - `src/calle_client.py`
+  - `src/server.py`
+  - `tests/test_dashboard.py`
+  - `tests/test_server.py`
+  - `tests/test_database.py`
+  - `output/procurement_telephony.db`
+  - `output/procurement_dashboard.html`
+  - `output/procurement_status_report.json`
+  - `output/procurement_status_report.csv`
+  - `PROGRESS.md`
+- **Current Status & Next Steps**:
+  - **Current Status**: 14 curated demo records generated, audio playback removed from dashboard, test suite 100% passing.
+  - **Next Steps**:
+    1. Deploy updated code and dashboard to Hostinger VPS (`calle.fyro.cloud`).
+    2. Finalize submission walkthrough recording.
+
 
 
 

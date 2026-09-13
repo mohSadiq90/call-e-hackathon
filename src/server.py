@@ -38,11 +38,11 @@ app = FastAPI(
 
 # Global State Container
 class DashboardBackendState:
-    def __init__(self, db_path: Optional[Path] = None):
+    def __init__(self, db_path: Optional[Path] = None, output_dir: Optional[Path] = None):
         self.data_path: Path = DATA_DIR / "suppliers_enterprise_50.json"
         if not self.data_path.exists():
             self.data_path = DATA_DIR / "suppliers.json"
-        self.reporter = ProcurementReporter(output_dir=OUTPUT_DIR)
+        self.reporter = ProcurementReporter(output_dir=output_dir or OUTPUT_DIR)
         self.client = CalleSupplierAgentClient(use_mock=True)
         self.db = ProcurementDatabase(db_path=db_path or DATABASE_PATH)
         self.call_results: List[CallResult] = []
@@ -80,15 +80,19 @@ class DashboardBackendState:
                 recording_url="/api/calls/call_BX2osyVHhnrQgDngurhn8w/audio",
             )
             existing_ids = {c.call_id for c in self.call_results}
-            if real_result.call_id not in existing_ids:
-                self.call_results.insert(0, real_result)
-                self.db.upsert_call_result(real_result)
-            else:
+            order_match_idx = next((i for i, c in enumerate(self.call_results) if c.order_id == real_result.order_id), None)
+            if real_result.call_id in existing_ids:
                 for idx, c in enumerate(self.call_results):
                     if c.call_id == real_result.call_id:
                         self.call_results[idx] = real_result
                         self.db.upsert_call_result(real_result)
                         break
+            elif order_match_idx is not None:
+                self.call_results[order_match_idx] = real_result
+                self.db.upsert_call_result(real_result)
+            else:
+                self.call_results.insert(0, real_result)
+                self.db.upsert_call_result(real_result)
         except Exception as e:
             print(f"[SERVER] Note on loading real call: {e}")
 
@@ -99,13 +103,11 @@ class DashboardBackendState:
         # 1. Check SQLite database first if not force_recompute
         if not force_recompute and self.db.count_calls() > 0:
             stored_calls = self.db.load_all_calls()
-            is_enterprise = "enterprise_50" in self.data_path.name
-            if not is_enterprise or len(stored_calls) >= 50:
-                self.call_results = stored_calls
-                self._sync_verified_real_call()
-                self.report = self.reporter.generate_batch_report(self.call_results)
-                print(f"[SERVER] Loaded {len(self.call_results)} call records from SQLite DB: {self.db.db_path}")
-                return
+            self.call_results = stored_calls
+            self._sync_verified_real_call()
+            self.report = self.reporter.generate_batch_report(self.call_results)
+            print(f"[SERVER] Loaded {len(self.call_results)} call records from SQLite DB: {self.db.db_path}")
+            return
 
         # 2. If existing report JSON exists and not forcing recompute, load from cache and sync to DB
         report_cache = OUTPUT_DIR / "procurement_status_report.json"
@@ -113,9 +115,6 @@ class DashboardBackendState:
             try:
                 with open(report_cache, "r", encoding="utf-8") as f:
                     cache_dict = json.load(f)
-                    cached_records = cache_dict.get("call_records", [])
-                    if "enterprise_50" in self.data_path.name and len(cached_records) < 50:
-                        raise ValueError("Cached report contains fewer records than enterprise dataset")
                     self.report = BatchProcurementReport(**cache_dict)
                     self.call_results = self.report.call_records
                     self._sync_verified_real_call()
@@ -134,6 +133,8 @@ class DashboardBackendState:
             raw_data = json.load(f)
 
         print(f"[SERVER] Processing {len(raw_data)} supplier orders from {self.data_path.name}...")
+        if force_recompute:
+            self.db.clear_all()
         self.db.save_suppliers_and_orders(raw_data)
 
         results = []

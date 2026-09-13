@@ -1,10 +1,13 @@
 """Integration tests for FastAPI dashboard backend and REST API endpoints in src.server."""
 
 import unittest
-import json
+import tempfile
+from pathlib import Path
 from fastapi.testclient import TestClient
 
 from src.server import app, state
+from src.database import ProcurementDatabase
+from src.reporter import ProcurementReporter
 
 
 class TestServerAPI(unittest.TestCase):
@@ -12,7 +15,23 @@ class TestServerAPI(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.client = TestClient(app)
-        state.load_initial_data()
+        cls.tmp_dir = tempfile.TemporaryDirectory()
+        cls.tmp_db = Path(cls.tmp_dir.name) / "test_telephony.db"
+        cls.orig_db = state.db
+        cls.orig_reporter = state.reporter
+        cls.orig_calls = list(state.call_results)
+        cls.orig_report = state.report
+        state.db = ProcurementDatabase(db_path=cls.tmp_db)
+        state.reporter = ProcurementReporter(output_dir=Path(cls.tmp_dir.name))
+        state.load_initial_data(force_recompute=True)
+
+    @classmethod
+    def tearDownClass(cls):
+        state.db = cls.orig_db
+        state.reporter = cls.orig_reporter
+        state.call_results = cls.orig_calls
+        state.report = cls.orig_report
+        cls.tmp_dir.cleanup()
 
     def test_root_dashboard_html(self):
         """GET / should serve the interactive HTML dashboard."""

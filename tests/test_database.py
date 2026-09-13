@@ -353,7 +353,7 @@ class TestDatabaseServerIntegration(unittest.TestCase):
         from src.server import DashboardBackendState
         from config.settings import DATA_DIR
 
-        test_state = DashboardBackendState(db_path=self.db_path)
+        test_state = DashboardBackendState(db_path=self.db_path, output_dir=Path(self.temp_dir.name))
         # Use small suppliers.json for fast test run
         small_dataset = DATA_DIR / "suppliers.json"
         test_state.load_initial_data(dataset_path=small_dataset, force_recompute=True)
@@ -362,7 +362,7 @@ class TestDatabaseServerIntegration(unittest.TestCase):
         self.assertGreaterEqual(test_state.db.count_calls(), 5)
 
         # Simulate fresh server reload with same SQLite database (without recomputing)
-        fresh_state = DashboardBackendState(db_path=self.db_path)
+        fresh_state = DashboardBackendState(db_path=self.db_path, output_dir=Path(self.temp_dir.name))
         fresh_state.load_initial_data(dataset_path=small_dataset, force_recompute=False)
 
         # Should load directly from SQLite

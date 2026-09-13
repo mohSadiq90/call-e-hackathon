@@ -1,7 +1,7 @@
 """
 HTML Dashboard Generator for CALL-E Autonomous Supply Chain Telephony.
 Produces an executive-ready, highly intuitive interactive single-page dashboard
-showcasing 50+ supplier calls, KPI metrics, delay analytics, audio simulation,
+showcasing supplier verification calls, KPI metrics, delay analytics,
 and conversational transcript drill-downs.
 """
 
@@ -810,96 +810,6 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       gap: 1.25rem;
     }}
 
-    /* Audio Player Component */
-    .audio-player {{
-      background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.95));
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius-md);
-      padding: 1.15rem 1.25rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.85rem;
-    }}
-
-    .audio-player-header {{
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 0.78rem;
-      color: var(--text-muted);
-    }}
-
-    .waveform-container {{
-      height: 48px;
-      display: flex;
-      align-items: center;
-      gap: 3px;
-      padding: 0.25rem 0;
-      overflow: hidden;
-    }}
-
-    .waveform-bar {{
-      flex: 1;
-      background: var(--card-border);
-      border-radius: 2px;
-      height: 20%;
-      transition: height 0.15s ease, background-color 0.15s ease;
-    }}
-
-    .waveform-bar.played {{
-      background: var(--accent-blue);
-    }}
-
-    .waveform-bar.active {{
-      background: var(--accent-indigo);
-      height: 80% !important;
-    }}
-
-    .audio-controls {{
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-    }}
-
-    .play-btn {{
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      background: var(--accent-blue);
-      color: #fff;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1rem;
-      transition: all 0.15s ease;
-      box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
-    }}
-    .play-btn:hover {{
-      transform: scale(1.05);
-      background: #2563eb;
-    }}
-
-    .time-display {{
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      font-variant-numeric: tabular-nums;
-    }}
-
-    .speed-btn {{
-      background: var(--bg-secondary);
-      border: 1px solid var(--card-border);
-      color: var(--text-main);
-      padding: 0.2rem 0.5rem;
-      border-radius: var(--radius-sm);
-      font-size: 0.75rem;
-      font-weight: 600;
-      cursor: pointer;
-    }}
-
     /* Transcript Chat Bubbles */
     .transcript-box {{
       background: var(--bg-secondary);
@@ -1180,7 +1090,7 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
         <div class="chart-panel-header">
           <div>
             <div class="chart-panel-title"><span>🔍</span> Delay Root Cause Taxonomy</div>
-            <div class="chart-panel-desc">Categorized root causes extracted from audio dialogue</div>
+            <div class="chart-panel-desc">Categorized root causes extracted from telephony dialogue</div>
           </div>
         </div>
         <div class="bar-list" id="delay-category-bars">
@@ -1340,46 +1250,10 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
           <div id="modal-esc-phone" style="font-family: monospace; font-size: 0.85rem; font-weight: 600; color: var(--accent-blue);"></div>
         </div>
 
-        <!-- Audio Player Component with HTML5 Audio Element & Live Telephony Stream -->
-        <audio id="modal-audio-element" preload="auto" style="display: none;"></audio>
-        <div class="audio-player">
-          <div class="audio-player-header">
-            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-              <span style="font-size: 1.1rem;">🎙️</span>
-              <strong>CALL-E HD Voice Recording Playback</strong>
-              <span id="modal-audio-badge" class="badge" style="font-size: 0.68rem; padding: 0.2rem 0.5rem; font-weight: 700;"></span>
-            </div>
-            <div id="modal-audio-meta" style="font-size: 0.74rem; color: var(--text-muted);">
-              <span>Codec: Opus HD (24kHz) | Compliance: TCPA Disclosed</span>
-            </div>
-          </div>
-
-          <!-- Waveform equalizer animation with seek scrubbing -->
-          <div class="waveform-container" id="waveform-bars" title="Click anywhere along the waveform to scrub/seek audio" style="cursor: pointer;" onclick="seekAudioFromClick(event)">
-            <!-- 48 bars rendered dynamically -->
-          </div>
-
-          <div class="audio-controls">
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
-              <button class="play-btn" id="modal-play-btn" onclick="toggleAudioPlayback()" title="Play / Pause Audio">▶</button>
-              <div class="time-display" id="modal-audio-time">00:00 / 02:25</div>
-            </div>
-            <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
-              <span id="modal-audio-direct-link" style="display: none;">
-                <a id="modal-audio-download" href="#" target="_blank" class="btn btn-secondary" style="padding: 0.2rem 0.55rem; font-size: 0.72rem; text-decoration: none; display: flex; align-items: center; gap: 0.25rem;">
-                  <span>⬇️</span> Real Audio
-                </a>
-              </span>
-              <button class="speed-btn" onclick="cycleSpeed(this)" title="Playback Speed">1.0x</button>
-              <button class="btn btn-secondary" style="padding: 0.2rem 0.6rem; font-size: 0.75rem;" onclick="restartAudio()">↺ Restart</button>
-            </div>
-          </div>
-        </div>
-
         <!-- Structured Dialogue Transcript -->
         <div>
-          <div style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.04em;">
-            Verified Conversational Audio Transcript
+          <div style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 0.4rem;">
+            <span>💬</span> Verified Conversational Dialogue Transcript
           </div>
           <div class="transcript-box" id="modal-transcript-container">
             <!-- Bubbles rendered dynamically -->
@@ -1477,25 +1351,6 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
     let currentStatusFilter = 'ALL';
     let currentViewMode = 'table';
     let activeModalCall = null;
-    let currentCallRecordingUrl = null;
-    let audioPlaying = false;
-    let audioCurrentSeconds = 0;
-    let audioTotalSeconds = 120;
-    let audioSpeed = 1.0;
-    let audioInterval = null;
-
-    // Initialize waveform bars
-    function initWaveform() {{
-      const container = document.getElementById('waveform-bars');
-      container.innerHTML = '';
-      for (let i = 0; i < 48; i++) {{
-        const bar = document.createElement('div');
-        bar.className = 'waveform-bar';
-        const heightPct = Math.max(15, Math.floor(Math.sin(i * 0.4) * 45 + Math.random() * 40 + 20));
-        bar.style.height = heightPct + '%';
-        container.appendChild(bar);
-      }}
-    }}
 
     // Populate Category dropdown
     function populateCategories() {{
@@ -1685,7 +1540,6 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
             </td>
             <td>
               <strong>${{r.order_id}}</strong>
-              ${{r.recording_url ? '<span title="Verified Telephony Audio Recording Available" style="display:inline-block;margin-left:0.35rem;padding:0.1rem 0.35rem;border-radius:4px;font-size:0.65rem;background:rgba(16, 185, 129, 0.2);color:var(--accent-emerald);font-weight:700;">🎙️ REC</span>' : ''}}
             </td>
             <td>
               <div style="font-weight:600;">${{r.supplier_name}}</div>
@@ -1705,7 +1559,7 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
             </td>
             <td>
               <button class="btn btn-secondary" style="padding:0.25rem 0.55rem;font-size:0.72rem;" onclick="event.stopPropagation(); openCallModal('${{r.call_id}}')">
-                ${{r.recording_url ? '▶ Listen' : 'View Call'}}
+                View Call
               </button>
             </td>
           </tr>
@@ -1732,7 +1586,6 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
               <div>
                 <div class="card-po">
                   ${{r.order_id}}
-                  ${{r.recording_url ? '<span style="font-size:0.65rem;margin-left:0.35rem;padding:0.1rem 0.35rem;border-radius:3px;background:rgba(16, 185, 129, 0.2);color:var(--accent-emerald);font-weight:700;">🎙️ REC</span>' : ''}}
                 </div>
                 <div class="card-supplier">${{r.supplier_name}}</div>
               </div>
@@ -1836,48 +1689,6 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       document.getElementById('modal-esc-name').textContent = call.escalation_contact_name || call.contact_name;
       document.getElementById('modal-esc-phone').textContent = call.escalation_contact_phone || call.phone_number;
 
-      // Audio setup
-      currentCallRecordingUrl = call.recording_url || null;
-      audioTotalSeconds = call.call_duration_seconds || 110;
-
-      const badgeEl = document.getElementById('modal-audio-badge');
-      const directLinkEl = document.getElementById('modal-audio-direct-link');
-      const downloadEl = document.getElementById('modal-audio-download');
-      const metaEl = document.getElementById('modal-audio-meta');
-      const audioEl = document.getElementById('modal-audio-element');
-
-      if (currentCallRecordingUrl) {{
-        if (badgeEl) {{
-          badgeEl.textContent = '🔴 Verified Live Recording';
-          badgeEl.className = 'status-badge on-time';
-          badgeEl.style.background = 'rgba(16, 185, 129, 0.2)';
-          badgeEl.style.color = 'var(--accent-emerald)';
-          badgeEl.style.border = '1px solid var(--accent-emerald)';
-          badgeEl.style.display = 'inline-block';
-        }}
-        if (directLinkEl) directLinkEl.style.display = 'inline-block';
-        if (downloadEl) downloadEl.href = currentCallRecordingUrl;
-        if (metaEl) metaEl.innerHTML = '<span>Provider: CALL-E Telephony Engine | Audio: Verified Live Stream</span>';
-        if (audioEl) {{
-          audioEl.src = currentCallRecordingUrl;
-          audioEl.playbackRate = audioSpeed;
-        }}
-      }} else {{
-        if (badgeEl) {{
-          badgeEl.textContent = '⚡ Synthesized Audio';
-          badgeEl.className = 'status-badge';
-          badgeEl.style.background = 'rgba(59, 130, 246, 0.15)';
-          badgeEl.style.color = 'var(--accent-blue)';
-          badgeEl.style.border = '1px solid rgba(59, 130, 246, 0.3)';
-          badgeEl.style.display = 'inline-block';
-        }}
-        if (directLinkEl) directLinkEl.style.display = 'none';
-        if (metaEl) metaEl.innerHTML = '<span>Codec: Opus HD (24kHz) | Compliance: TCPA Disclosed</span>';
-        if (audioEl) audioEl.src = '';
-      }}
-
-      restartAudio();
-
       // Render Transcript bubbles
       renderTranscript(call.raw_transcript, call.contact_name);
 
@@ -1885,10 +1696,6 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
     }}
 
     function closeCallModal() {{
-      pauseAudio();
-      const audioEl = document.getElementById('modal-audio-element');
-      if (audioEl) audioEl.src = '';
-      currentCallRecordingUrl = null;
       document.getElementById('call-modal').classList.remove('active');
     }}
 
@@ -1902,7 +1709,7 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       container.innerHTML = '';
 
       if (!rawText) {{
-        container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:1rem;">Audio transcript being processed...</div>';
+        container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:1rem;">Conversational transcript being processed...</div>';
         return;
       }}
 
@@ -1940,129 +1747,6 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
         `;
         container.appendChild(bubble);
       }});
-    }}
-
-    // Audio Playback Engine (Real Audio + Synthesized Fallback)
-    function updateAudioProgressUI() {{
-      const curM = String(Math.floor(audioCurrentSeconds / 60)).padStart(2, '0');
-      const curS = String(Math.floor(audioCurrentSeconds % 60)).padStart(2, '0');
-      const totM = String(Math.floor(audioTotalSeconds / 60)).padStart(2, '0');
-      const totS = String(Math.floor(audioTotalSeconds % 60)).padStart(2, '0');
-      const timeDisplay = document.getElementById('modal-audio-time');
-      if (timeDisplay) timeDisplay.textContent = `${{curM}}:${{curS}} / ${{totM}}:${{totS}}`;
-
-      const bars = document.querySelectorAll('#waveform-bars .waveform-bar');
-      if (bars.length > 0 && audioTotalSeconds > 0) {{
-        const pctPlayed = Math.max(0, Math.min(1, audioCurrentSeconds / audioTotalSeconds));
-        const activeIndex = Math.floor(pctPlayed * bars.length);
-        bars.forEach((b, idx) => {{
-          if (idx <= activeIndex) {{
-            b.classList.add('played');
-          }} else {{
-            b.classList.remove('played');
-          }}
-          if (idx === activeIndex) {{
-            b.classList.add('active');
-          }} else {{
-            b.classList.remove('active');
-          }}
-        }});
-      }}
-    }}
-
-    function seekAudioFromClick(event) {{
-      const container = document.getElementById('waveform-bars');
-      if (!container || !audioTotalSeconds) return;
-      const rect = container.getBoundingClientRect();
-      const clickX = event.clientX - rect.left;
-      const pct = Math.max(0, Math.min(1, clickX / rect.width));
-      audioCurrentSeconds = pct * audioTotalSeconds;
-
-      const audioEl = document.getElementById('modal-audio-element');
-      if (audioEl && currentCallRecordingUrl && audioEl.duration && !isNaN(audioEl.duration)) {{
-        audioEl.currentTime = Math.min(audioCurrentSeconds, audioEl.duration);
-      }}
-      updateAudioProgressUI();
-    }}
-
-    function toggleAudioPlayback() {{
-      if (audioPlaying) {{
-        pauseAudio();
-      }} else {{
-        playAudio();
-      }}
-    }}
-
-    function playAudio() {{
-      audioPlaying = true;
-      const btn = document.getElementById('modal-play-btn');
-      if (btn) btn.textContent = '⏸';
-
-      const audioEl = document.getElementById('modal-audio-element');
-      if (currentCallRecordingUrl && audioEl && audioEl.src) {{
-        audioEl.playbackRate = audioSpeed;
-        const playPromise = audioEl.play();
-        if (playPromise !== undefined) {{
-          playPromise.catch(err => {{
-            console.log('Audio playback notice:', err);
-          }});
-        }}
-      }}
-
-      if (audioInterval) clearInterval(audioInterval);
-      audioInterval = setInterval(() => {{
-        if (currentCallRecordingUrl && audioEl && !audioEl.paused && audioEl.duration && !isNaN(audioEl.duration)) {{
-          audioCurrentSeconds = audioEl.currentTime;
-          audioTotalSeconds = Math.max(audioEl.duration, 1);
-        }} else {{
-          audioCurrentSeconds += (1 * audioSpeed);
-        }}
-
-        if (audioCurrentSeconds >= audioTotalSeconds) {{
-          audioCurrentSeconds = audioTotalSeconds;
-          pauseAudio();
-        }}
-
-        updateAudioProgressUI();
-      }}, 500);
-    }}
-
-    function pauseAudio() {{
-      audioPlaying = false;
-      if (audioInterval) clearInterval(audioInterval);
-      const audioEl = document.getElementById('modal-audio-element');
-      if (audioEl && !audioEl.paused) {{
-        audioEl.pause();
-      }}
-      const btn = document.getElementById('modal-play-btn');
-      if (btn) btn.textContent = '▶';
-    }}
-
-    function restartAudio() {{
-      pauseAudio();
-      audioCurrentSeconds = 0;
-      const audioEl = document.getElementById('modal-audio-element');
-      if (audioEl) {{
-        audioEl.currentTime = 0;
-      }}
-      updateAudioProgressUI();
-    }}
-
-    function cycleSpeed(btn) {{
-      if (audioSpeed === 1.0) {{
-        audioSpeed = 1.25;
-      }} else if (audioSpeed === 1.25) {{
-        audioSpeed = 1.5;
-      }} else if (audioSpeed === 1.5) {{
-        audioSpeed = 2.0;
-      }} else {{
-        audioSpeed = 1.0;
-      }}
-      btn.textContent = `${{audioSpeed.toFixed(1)}}x`;
-      const audioEl = document.getElementById('modal-audio-element');
-      if (audioEl) {{
-        audioEl.playbackRate = audioSpeed;
-      }}
     }}
 
     // Trigger New Call Modal
@@ -2215,7 +1899,6 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
 
     // App Initialization
     window.addEventListener('DOMContentLoaded', () => {{
-      initWaveform();
       populateCategories();
       updateAnalytics();
       applyFilters();

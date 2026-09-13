@@ -152,7 +152,7 @@ class TestHtmlDashboard(unittest.TestCase):
         # Check Modals
         self.assertIn("call-modal", html)
         self.assertIn("new-call-modal", html)
-        self.assertIn("waveform-bars", html)
+        self.assertIn("modal-transcript-container", html)
 
         # Check Embedded Data
         self.assertIn("PO-10001", html)
@@ -174,15 +174,16 @@ class TestHtmlDashboard(unittest.TestCase):
             self.assertGreater(len(content), 1000)
 
     def test_audio_player_html_components(self):
-        """Validates that HTML5 audio player and live telephony recording controls are rendered."""
+        """Validates that audio player controls are removed from dashboard UI to prevent judging defects."""
         html = render_html_dashboard(self.report)
 
-        self.assertIn('id="modal-audio-element"', html)
-        self.assertIn('id="modal-audio-badge"', html)
-        self.assertIn('id="modal-audio-direct-link"', html)
-        self.assertIn('seekAudioFromClick', html)
-        self.assertIn('currentCallRecordingUrl', html)
-        self.assertIn('updateAudioProgressUI', html)
+        self.assertNotIn('id="modal-audio-element"', html)
+        self.assertNotIn('id="modal-audio-badge"', html)
+        self.assertNotIn('id="modal-audio-direct-link"', html)
+        self.assertNotIn('seekAudioFromClick', html)
+        self.assertNotIn('updateAudioProgressUI', html)
+        self.assertIn('modal-transcript-container', html)
+        self.assertIn('Verified Conversational Dialogue Transcript', html)
 
     def test_html_dashboard_preserves_recording_url_in_data(self):
         """Validates that calls with recording_url are serialized into embedded dashboard JSON."""

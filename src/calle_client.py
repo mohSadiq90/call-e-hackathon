@@ -247,6 +247,12 @@ class CalleSupplierAgentClient:
             elif s_hint == "ON_TIME":
                 status = FulfillmentStatus.ON_TIME
                 revised_date = order.committed_delivery_date
+                delay_cat = DelayReasonCategory.NONE
+                freight_cost = 0.0
+
+        if status == FulfillmentStatus.ON_TIME:
+            delay_cat = DelayReasonCategory.NONE
+            freight_cost = 0.0
 
         delay_days = 0
         if status in (FulfillmentStatus.DELAYED, FulfillmentStatus.PARTIAL_DISPATCH) and revised_date:
