@@ -136,6 +136,29 @@ class TestServerAPI(unittest.TestCase):
         self.assertEqual(data["result"]["order_id"], "PO-88888")
         self.assertEqual(len(state.call_results), initial_count + 1)
 
+    def test_api_trigger_call_default_live(self):
+        """POST /api/calls/trigger without 'live' field should default to live=True."""
+        initial_count = len(state.call_results)
+        payload = {
+            "supplier_id": "SUP-TEST-DEFAULT-LIVE",
+            "supplier_name": "Default Live Supplier",
+            "contact_name": "David Clark",
+            "phone_number": "+1-555-099-5678",
+            "order_id": "PO-77777",
+            "item_description": "Custom Sensor Assemblies",
+            "quantity": 1500,
+            "unit_cost_usd": 45.00,
+            "total_value_usd": 67500.00,
+            "committed_delivery_date": "2026-09-30",
+            "destination_facility": "DC-02 Chicago",
+        }
+        resp = self.client.post("/api/calls/trigger", json=payload)
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertTrue(data["success"])
+        self.assertEqual(data["result"]["order_id"], "PO-77777")
+        self.assertEqual(len(state.call_results), initial_count + 1)
+
     def test_api_export_csv(self):
         """GET /api/export/csv should stream CSV data."""
         resp = self.client.get("/api/export/csv")

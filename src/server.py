@@ -176,7 +176,7 @@ class TriggerCallPayload(BaseModel):
     total_value_usd: float = 62500.00
     committed_delivery_date: str = "2026-09-25"
     destination_facility: str = "DC-04 Bentonville Facility"
-    live: bool = False
+    live: bool = True
     mock_status: Optional[str] = "ON_TIME"
     delay_days: Optional[int] = 0
     delay_category: Optional[str] = "NONE"
@@ -188,7 +188,7 @@ class TriggerCallPayload(BaseModel):
 class TriggerBatchWorkflowPayload(BaseModel):
     category: Optional[str] = "ALL"
     max_orders: Optional[int] = 5
-    live: bool = False
+    live: bool = True
 
 
 

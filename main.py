@@ -43,15 +43,16 @@ def main():
         help="Run verification only for a specific Supplier ID (e.g. SUP-101)",
     )
     parser.add_argument(
-        "--mock",
-        action="store_true",
-        default=True,
-        help="Run in high-fidelity simulation mode (default)",
-    )
-    parser.add_argument(
         "--live",
         action="store_true",
-        help="Run with live CALL-E phone telephony API",
+        default=True,
+        help="Run with live CALL-E phone telephony API (default)",
+    )
+    parser.add_argument(
+        "--mock",
+        action="store_true",
+        default=False,
+        help="Run in high-fidelity simulation mode (zero API cost)",
     )
     parser.add_argument(
         "--company-name",
@@ -86,7 +87,7 @@ def main():
 
     args = parser.parse_args()
 
-    use_mock = not args.live if args.live else True
+    use_mock = args.mock
 
     print("=" * 70)
     print("📞 CALL-E SUPPLY CHAIN AGENT - STARTING STATUS VERIFICATION")

@@ -1312,8 +1312,8 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
           <div class="form-group">
             <label class="form-label">Telephony Execution Mode</label>
             <select id="form-mode" class="form-select">
+              <option value="live" selected>Live CALL-E Telephony Network (Outbound Line)</option>
               <option value="mock">High-Fidelity Offline Simulator (Instant / Zero API Cost)</option>
-              <option value="live">Live CALL-E Telephony Network (Outbound Line)</option>
             </select>
           </div>
 

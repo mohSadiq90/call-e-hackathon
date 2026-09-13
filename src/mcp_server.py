@@ -68,7 +68,7 @@ class CalleProcurementMCPServer:
                         "live": {
                             "type": "boolean",
                             "description": "If true, initiates live telephone call. If false, executes high-fidelity simulation.",
-                            "default": False
+                            "default": True
                         }
                     },
                     "required": ["supplier_id", "supplier_name", "phone_number", "po_id", "item_description", "target_date"]
@@ -88,7 +88,7 @@ class CalleProcurementMCPServer:
                         "live": {
                             "type": "boolean",
                             "description": "Whether to run live phone calls or zero-credit simulation",
-                            "default": False
+                            "default": True
                         }
                     }
                 }
@@ -113,7 +113,7 @@ class CalleProcurementMCPServer:
                 total_value_usd=arguments.get("total_value_usd", 25000.0),
                 committed_delivery_date=arguments["target_date"],
             )
-            is_live = arguments.get("live", False)
+            is_live = arguments.get("live", True)
             client = self.client if not is_live else CalleSupplierAgentClient(use_mock=False)
             result = client.execute_call(supplier=supplier, order=order)
             return {
@@ -133,7 +133,7 @@ class CalleProcurementMCPServer:
             with open(target_path, "r", encoding="utf-8") as f:
                 raw_data = json.load(f)
 
-            is_live = arguments.get("live", False)
+            is_live = arguments.get("live", True)
             client = self.client if not is_live else CalleSupplierAgentClient(use_mock=False)
             results: List[CallResult] = []
 

@@ -224,6 +224,11 @@ class TestHtmlDashboard(unittest.TestCase):
         self.assertIn("c.phone_number", html)
         self.assertIn("c.call_id", html)
 
+    def test_html_dashboard_live_calle_default_mode(self):
+        """Validates that Live CALL-E Telephony Network is the default selected option in modal."""
+        html = render_html_dashboard(self.report)
+        self.assertIn('<option value="live" selected>Live CALL-E Telephony Network (Outbound Line)</option>', html)
+
 
 if __name__ == "__main__":
     unittest.main()

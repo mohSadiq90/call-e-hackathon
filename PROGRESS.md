@@ -534,6 +534,50 @@
     1. Paste finalized submission story and tags into Devpost form.
     2. Attach demo video link and publish final hackathon entry.
 
+### [2026-09-13] - Phase 12: Live CALL-E Telephony as Default Execution Mode & Hostinger VPS Live Deployment
+- **Features & Enhancements**:
+  - **Live CALL-E as Default Telephony Option Across All Entry Points**:
+    - **Interactive Web Dashboard Modal (`src/html_dashboard.py`, `output/procurement_dashboard.html`)**:
+      - Updated `#form-mode` `<select>` dropdown to list `Live CALL-E Telephony Network (Outbound Line)` (`value="live"`) first with `selected` attribute by default.
+      - Retained High-Fidelity Offline Simulator (`value="mock"`) as an explicit opt-in choice for zero-credit testing.
+    - **FastAPI REST API Backend (`src/server.py`)**:
+      - Updated `TriggerCallPayload.live` default from `False` to `True`.
+      - Updated `TriggerBatchWorkflowPayload.live` default from `False` to `True`.
+      - Ensures all calls triggered via REST API endpoints default to live CALL-E outbound telephony without requiring explicit `"live": true` payloads.
+    - **CLI Runner (`main.py`)**:
+      - Swapped CLI argument priority: `--live` is now default (`default=True`), and `--mock` is the explicit simulation flag (`default=False`).
+      - Invocations of `python3 main.py` now default to Live CALL-E telephony.
+    - **Model Context Protocol (MCP) Server (`src/mcp_server.py`)**:
+      - Updated MCP schema for `calle_check_supplier_status` and `calle_run_batch_procurement` tools to set `"default": True` for parameter `live`.
+      - Updated tool execution handlers to default `is_live = arguments.get("live", True)`.
+  - **Automated Testing Suite Expansion (`tests/`)**:
+    - Added `test_html_dashboard_live_calle_default_mode` in `tests/test_dashboard.py` (asserts `<option value="live" selected>` in rendered HTML).
+    - Added `test_api_trigger_call_default_live` in `tests/test_server.py` (asserts `POST /api/calls/trigger` defaults to `live=True` when omitted from payload).
+    - Test suite expanded from 54 to **56 passing tests (100% pass rate in 0.40s)**.
+  - **Hostinger VPS Live Deployment (`calle.fyro.cloud`)**:
+    - Pushed commit to `origin/main`.
+    - Synchronized live production repository `/var/www/call-e-hackathon` on Hostinger VPS (`72.61.224.120`).
+    - Restarted `calle.service` systemd daemon.
+    - Verified `https://calle.fyro.cloud` serves live default mode with healthy HTTP 200 response.
+- **Verification & Testing**:
+    - Full test suite passed: `python3 -m unittest discover -s tests` (56/56 tests passing, 100% success rate).
+    - Disk space utilization: `/home` at 50% (2.4GB free out of 4.8GB).
+- **Key Files Modified**:
+  - `src/html_dashboard.py`
+  - `output/procurement_dashboard.html`
+  - `src/server.py`
+  - `main.py`
+  - `src/mcp_server.py`
+  - `tests/test_dashboard.py`
+  - `tests/test_server.py`
+  - `PROGRESS.md`
+- **Current Status & Next Steps**:
+  - **Current Status**: Live CALL-E is now the default option across Web UI, REST API, CLI, and MCP. Successfully tested (56/56 unit tests passing) and deployed live to Hostinger VPS.
+  - **Next Steps**:
+    1. Await maintainer merge of upstream PR #440.
+    2. Finalize Devpost submission with demo recording.
+
+
 
 
 
