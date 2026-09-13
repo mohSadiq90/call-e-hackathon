@@ -355,8 +355,8 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
     /* Analytics & Distribution Row */
     .analytics-row {{
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 1rem;
+      grid-template-columns: 1fr 1.5fr;
+      gap: 1.25rem;
     }}
 
     @media (max-width: 1024px) {{
@@ -570,7 +570,7 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
 
     table.data-table th {{
       background-color: var(--bg-secondary);
-      padding: 0.75rem 1rem;
+      padding: 0.9rem 1rem;
       font-weight: 600;
       color: var(--text-muted);
       text-transform: uppercase;
@@ -581,9 +581,30 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
     }}
 
     table.data-table td {{
-      padding: 0.85rem 1rem;
+      padding: 1.2rem 1rem;
       border-bottom: 1px solid var(--card-border);
       vertical-align: middle;
+    }}
+
+    .btn-action-view {{
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.32rem 0.65rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #60a5fa;
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }}
+    .btn-action-view:hover {{
+      background: rgba(59, 130, 246, 0.22);
+      border-color: #3b82f6;
+      color: #fff;
     }}
 
     table.data-table tbody tr {{
@@ -808,9 +829,9 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       gap: 1.25rem;
     }}
 
-    /* Transcript Chat Bubbles */
+    /* Transcript Chat Bubbles with High Contrast */
     .transcript-box {{
-      background: var(--bg-secondary);
+      background: #0b1120;
       border: 1px solid var(--card-border);
       border-radius: var(--radius-md);
       padding: 1.25rem;
@@ -824,27 +845,42 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
     .chat-bubble {{
       display: flex;
       flex-direction: column;
-      max-width: 82%;
-      padding: 0.75rem 1rem;
+      max-width: 84%;
+      padding: 0.85rem 1.15rem;
       border-radius: var(--radius-md);
-      font-size: 0.84rem;
-      line-height: 1.45;
+      font-size: 0.86rem;
+      line-height: 1.5;
       position: relative;
     }}
 
     .chat-bubble.agent {{
       align-self: flex-start;
-      background-color: var(--card-bg);
-      border: 1px solid var(--card-border);
+      background-color: #1e293b;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      color: #f8fafc;
       border-bottom-left-radius: 2px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
     }}
 
     .chat-bubble.supplier {{
       align-self: flex-end;
-      background-color: #1e3a5f;
-      border: 1px solid #2b517e;
-      color: #eff6ff;
+      background-color: #1d4ed8;
+      border: 1px solid #3b82f6;
+      color: #ffffff;
       border-bottom-right-radius: 2px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }}
+
+    body.light-theme .chat-bubble.agent {{
+      background-color: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: #0f172a;
+    }}
+
+    body.light-theme .chat-bubble.supplier {{
+      background-color: #dbeafe;
+      border: 1px solid #93c5fd;
+      color: #1e3a8a;
     }}
 
     .speaker-name {{
@@ -858,8 +894,8 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       gap: 0.35rem;
     }}
 
-    .speaker-name.agent-lbl {{ color: var(--accent-blue); }}
-    .speaker-name.supplier-lbl {{ color: #93c5fd; }}
+    .speaker-name.agent-lbl {{ color: #60a5fa; }}
+    .speaker-name.supplier-lbl {{ color: #bfdbfe; }}
 
     .entity-tag {{
       display: inline-block;
@@ -883,20 +919,78 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       font-size: 0.78rem;
       font-weight: 600;
       color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
     }}
 
     .form-input, .form-select {{
       background-color: var(--bg-secondary);
       border: 1px solid var(--card-border);
       border-radius: var(--radius-sm);
-      padding: 0.55rem 0.85rem;
+      padding: 0.6rem 0.9rem;
       color: var(--text-main);
       font-size: 0.84rem;
       outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }}
+
+    .form-select {{
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 0.85rem center;
+      background-size: 1rem;
+      padding-right: 2.3rem;
+      cursor: pointer;
     }}
 
     .form-input:focus, .form-select:focus {{
       border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }}
+
+    /* Read-Only Informational Inputs */
+    .form-input-readonly, .form-input[readonly] {{
+      background-color: rgba(15, 23, 42, 0.55) !important;
+      border: 1px dashed rgba(148, 163, 184, 0.25) !important;
+      color: #94a3b8 !important;
+      cursor: default;
+      user-select: none;
+    }}
+    .form-input-readonly:focus, .form-input[readonly]:focus {{
+      border-color: rgba(148, 163, 184, 0.35) !important;
+      box-shadow: none !important;
+    }}
+
+    /* Editable Destination Phone Input */
+    .form-input-editable {{
+      border: 1.5px solid var(--accent-blue) !important;
+      background-color: rgba(59, 130, 246, 0.05) !important;
+    }}
+
+    .badge-readonly {{
+      font-size: 0.65rem;
+      font-weight: 500;
+      color: var(--text-dim);
+      background: rgba(255, 255, 255, 0.06);
+      padding: 1px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }}
+
+    .badge-editable {{
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: #60a5fa;
+      background: rgba(59, 130, 246, 0.15);
+      padding: 1px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }}
 
     .form-grid-2 {{
@@ -1110,7 +1204,7 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       <div class="kpi-card" style="--kpi-accent: var(--accent-cyan);">
         <div class="kpi-header">
           <span class="kpi-label">Voice Hours Saved</span>
-          <span class="kpi-icon">⚡</span>
+          <span class="kpi-icon">⏱️</span>
         </div>
         <div class="kpi-value" id="kpi-hours-saved">{(report.total_orders_checked * 0.35):.1f}h</div>
         <div class="kpi-subtext">
@@ -1135,30 +1229,18 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
         </div>
       </div>
 
-      <!-- Delay Taxonomy -->
-      <div class="chart-panel">
+      <!-- Delay Root Causes & Financial Risk (Consolidated Widget) -->
+      <div class="chart-panel consolidated-panel">
         <div class="chart-panel-header">
           <div>
-            <div class="chart-panel-title"><span>🔍</span> Delay Root Cause Taxonomy</div>
-            <div class="chart-panel-desc">Categorized root causes extracted from telephony dialogue</div>
+            <div class="chart-panel-title"><span>🛡️</span> Delay Root Causes & Financial Exposure</div>
+            <div class="chart-panel-desc">Consolidated operational disruption taxonomy with quantified financial penalty risk side-by-side</div>
           </div>
         </div>
         <div class="bar-list" id="delay-category-bars">
-          <!-- Dynamically populated -->
+          <!-- Dynamically populated with count + financial risk side-by-side -->
         </div>
-      </div>
-
-      <!-- Financial Exposure by Category -->
-      <div class="chart-panel">
-        <div class="chart-panel-header">
-          <div>
-            <div class="chart-panel-title"><span>🛡️</span> Risk Distribution by Supply Line</div>
-            <div class="chart-panel-desc">Calculated financial exposure by vendor category</div>
-          </div>
-        </div>
-        <div class="bar-list" id="risk-category-bars">
-          <!-- Dynamically populated -->
-        </div>
+        <div id="risk-category-bars" style="display: none;"></div>
       </div>
     </section>
 
@@ -1341,30 +1423,30 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
 
             <div class="form-grid-2">
               <div class="form-group">
-                <label class="form-label">Purchase Order ID</label>
-                <input type="text" id="form-po-id" class="form-input" required value="PO-99500" />
+                <label class="form-label">Purchase Order ID <span class="badge-readonly">Auto-Populated</span></label>
+                <input type="text" id="form-po-id" class="form-input form-input-readonly" readonly required value="PO-99500" />
               </div>
               <div class="form-group">
-                <label class="form-label">Committed Delivery Date</label>
-                <input type="date" id="form-delivery-date" class="form-input" required value="2026-09-25" />
+                <label class="form-label">Committed Delivery Date <span class="badge-readonly">Auto-Populated</span></label>
+                <input type="date" id="form-delivery-date" class="form-input form-input-readonly" readonly required value="2026-09-25" />
               </div>
             </div>
 
             <div class="form-grid-2">
               <div class="form-group">
-                <label class="form-label">Supplier Contact Name</label>
-                <input type="text" id="form-contact-name" class="form-input" required placeholder="e.g. Sandra Bullock" />
+                <label class="form-label">Supplier Contact Name <span class="badge-readonly">Auto-Populated</span></label>
+                <input type="text" id="form-contact-name" class="form-input form-input-readonly" readonly required placeholder="e.g. Sandra Bullock" />
               </div>
               <div class="form-group">
-                <label class="form-label">Supplier Phone Number</label>
-                <input type="text" id="form-phone" class="form-input" required placeholder="+1-555-019-4821" />
+                <label class="form-label">Supplier Phone Number <span class="badge-editable">Editable Destination</span></label>
+                <input type="text" id="form-phone" class="form-input form-input-editable" required placeholder="+1-555-019-4821" />
                 <span style="font-size: 0.71rem; color: var(--text-dim); margin-top: 0.15rem;">Tip: Change to your personal mobile number to test receiving the real call.</span>
               </div>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Item Description & Quantity</label>
-              <input type="text" id="form-item-desc" class="form-input" required placeholder="5,000 units Optical Transceivers" />
+              <label class="form-label">Item Description & Quantity <span class="badge-readonly">Auto-Populated</span></label>
+              <input type="text" id="form-item-desc" class="form-input form-input-readonly" readonly required placeholder="5,000 units Optical Transceivers" />
             </div>
 
             <div class="form-group">
@@ -1598,7 +1680,20 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       const selected = select.options[select.selectedIndex];
       if (!selected) return;
 
-      if (selected.value === '__CUSTOM__') {{
+      const isCustom = (selected.value === '__CUSTOM__');
+      ['form-po-id', 'form-delivery-date', 'form-contact-name', 'form-item-desc'].forEach(id => {{
+        const el = document.getElementById(id);
+        if (el) {{
+          el.readOnly = !isCustom;
+          if (isCustom) {{
+            el.classList.remove('form-input-readonly');
+          }} else {{
+            el.classList.add('form-input-readonly');
+          }}
+        }}
+      }});
+
+      if (isCustom) {{
         document.getElementById('form-po-id').value = 'PO-' + Math.floor(10000 + Math.random() * 90000);
         document.getElementById('form-delivery-date').value = new Date().toISOString().slice(0, 10);
         document.getElementById('form-contact-name').value = '';
@@ -1626,41 +1721,53 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       const delayed = allCalls.filter(c => c.fulfillment_status === 'DELAYED').length;
       const partial = allCalls.filter(c => c.fulfillment_status === 'PARTIAL_DISPATCH').length;
       const unreachable = allCalls.filter(c => c.fulfillment_status === 'UNREACHABLE').length;
+      const escalations = allCalls.filter(c => c.escalation_required).length;
 
-      // Status bars
+      // Status distribution bars strictly matching top KPI color semantics:
+      // On-Time = Green, Delayed = Yellow, Partial = Info Cyan, Unreachable = Gray, Escalation = Red
       const statusContainer = document.getElementById('status-distribution-bars');
       statusContainer.innerHTML = `
         ${{renderBarItem('On-Time Fulfillment', onTime, total, 'var(--accent-green)')}}
         ${{renderBarItem('Delayed Shipments', delayed, total, 'var(--accent-amber)')}}
-        ${{renderBarItem('Partial Dispatches', partial, total, 'var(--accent-blue)')}}
-        ${{renderBarItem('Unreachable / Voicemail', unreachable, total, 'var(--accent-purple)')}}
+        ${{renderBarItem('Partial Dispatches', partial, total, '#38bdf8')}}
+        ${{renderBarItem('Unreachable / Voicemail', unreachable, total, '#64748b')}}
+        ${{renderBarItem('Critical Escalations', escalations, total, 'var(--accent-red)')}}
       `;
 
-      // Delay Category Breakdown
-      const categoryCounts = {{}};
+      // Consolidated Delay Root Cause Taxonomy & Financial Exposure (count + risk side-by-side)
+      const categoryData = {{}};
+      let maxCategoryRisk = 0;
       allCalls.forEach(c => {{
         if (c.delay_category && c.delay_category !== 'NONE') {{
-          categoryCounts[c.delay_category] = (categoryCounts[c.delay_category] || 0) + 1;
+          const cat = c.delay_category.replace(/_/g, ' ');
+          if (!categoryData[cat]) {{
+            categoryData[cat] = {{ count: 0, risk: 0 }};
+          }}
+          categoryData[cat].count += 1;
+          categoryData[cat].risk += (c.estimated_financial_impact_usd || 0);
+          if (categoryData[cat].risk > maxCategoryRisk) {{
+            maxCategoryRisk = categoryData[cat].risk;
+          }}
         }}
       }});
-      const catContainer = document.getElementById('delay-category-bars');
-      catContainer.innerHTML = Object.entries(categoryCounts).map(([cat, cnt]) => {{
-        return renderBarItem(cat.replace(/_/g, ' '), cnt, delayed || 1, 'var(--accent-indigo)');
-      }}).join('') || '<div style="color:var(--text-muted);font-size:0.8rem;">No delays recorded</div>';
 
-      // Financial Risk Distribution
-      const riskSums = {{}};
-      allCalls.forEach(c => {{
-        if (c.estimated_financial_impact_usd > 0) {{
-          const key = c.delay_category !== 'NONE' ? c.delay_category.replace(/_/g, ' ') : 'Expedited Transit';
-          riskSums[key] = (riskSums[key] || 0) + c.estimated_financial_impact_usd;
-        }}
-      }});
-      const totalRisk = reportState.total_financial_risk_usd || 1;
+      const catContainer = document.getElementById('delay-category-bars');
+      const entries = Object.entries(categoryData);
+      if (entries.length === 0) {{
+        catContainer.innerHTML = '<div style="color:var(--text-muted);font-size:0.8rem;padding:0.5rem 0;">No delay disruptions recorded</div>';
+      }} else {{
+        entries.sort((a, b) => b[1].risk - a[1].risk || b[1].count - a[1].count);
+        catContainer.innerHTML = entries.map(([cat, data]) => {{
+          const countPct = Math.round((data.count / (delayed || 1)) * 100);
+          return renderConsolidatedBarItem(cat, data.count, countPct, data.risk, maxCategoryRisk);
+        }}).join('');
+      }}
+
+      // Backwards-compatible risk-category-bars
       const riskContainer = document.getElementById('risk-category-bars');
-      riskContainer.innerHTML = Object.entries(riskSums).map(([k, amt]) => {{
-        return renderBarItem(`${{k}} ($${{amt.toLocaleString()}})`, amt, totalRisk, 'var(--accent-red)');
-      }}).join('') || '<div style="color:var(--text-muted);font-size:0.8rem;">Zero exposure identified</div>';
+      if (riskContainer) {{
+        riskContainer.innerHTML = '';
+      }}
 
       // Update Filter Pill counts
       document.getElementById('pill-count-all').textContent = total;
@@ -1668,7 +1775,27 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       document.getElementById('pill-count-delayed').textContent = delayed;
       document.getElementById('pill-count-partial').textContent = partial;
       document.getElementById('pill-count-unreachable').textContent = unreachable;
-      document.getElementById('pill-count-escalations').textContent = allCalls.filter(c => c.escalation_required).length;
+      document.getElementById('pill-count-escalations').textContent = escalations;
+    }}
+
+    function renderConsolidatedBarItem(label, count, countPct, riskUsd, maxRisk) {{
+      const riskPct = maxRisk > 0 ? Math.round((riskUsd / maxRisk) * 100) : countPct;
+      const riskStr = riskUsd > 0 ? `$${{riskUsd.toLocaleString()}}` : '$0';
+      const barColor = riskUsd >= 10000 ? 'var(--accent-red)' : (riskUsd > 0 ? 'var(--accent-amber)' : 'var(--accent-green)');
+      return `
+        <div class="bar-item">
+          <div class="bar-label-row">
+            <span style="font-weight:600; color:var(--text-main); font-size:0.82rem;">${{label}}</span>
+            <div style="display:flex; align-items:center; gap:0.75rem;">
+              <span style="color:var(--text-muted); font-size:0.78rem;">${{count}} orders (${{countPct}}%)</span>
+              <strong style="color:${{riskUsd > 0 ? 'var(--accent-red)' : 'var(--text-muted)'}}; font-size:0.84rem;">${{riskStr}}</strong>
+            </div>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width: ${{Math.max(riskPct, 6)}}%; background-color: ${{barColor}};"></div>
+          </div>
+        </div>
+      `;
     }}
 
     function renderBarItem(label, val, total, color) {{
@@ -1750,23 +1877,33 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
         const statusIcon = getStatusIcon(r.fulfillment_status);
         const delayStr = r.delay_days > 0 ? `+${{r.delay_days}}d` : '0d';
         const riskStr = r.estimated_financial_impact_usd > 0 ? `$${{r.estimated_financial_impact_usd.toLocaleString()}}` : '$0';
-        const escTag = r.escalation_required ? `<span class="escalation-tag">🚨 ESCALATE</span>` : '';
+
+        // Simplify Ledger Columns: Clean supplier name without noise
+        const supplierDisplay = `<div style="font-weight:600; color:var(--text-main); font-size:0.84rem;">${{r.supplier_name}}</div>`;
+
+        // Simplify Ledger Columns: Clean escalation lead name without phone number or lengthy parenthetical titles
+        const rawLead = r.escalation_contact_name || r.contact_name || '-';
+        const cleanLead = rawLead.replace(/\\s*\\(.*?\\)\\s*/g, '').trim();
+
+        // Clean Truncation: Standard CSS ellipsis + native browser hover tooltip
+        const rawItemDesc = r.item_description || r.delay_notes || 'Standard Delivery Batch';
+        const safeTooltip = rawItemDesc.replace(/"/g, '&quot;');
 
         return `
           <tr onclick="openCallModal('${{r.call_id}}')">
             <td>
               <span class="status-badge ${{statusClass}}">${{statusIcon}} ${{r.fulfillment_status}}</span>
-              ${{escTag}}
             </td>
             <td>
               <strong>${{r.order_id}}</strong>
             </td>
             <td>
-              <div style="font-weight:600;">${{r.supplier_name}}</div>
-              <div style="font-size:0.72rem;color:var(--text-muted);">${{r.contact_name}}</div>
+              ${{supplierDisplay}}
             </td>
-            <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${{r.delay_notes || 'Confirmed via call'}}">
-              ${{r.delay_notes || 'Standard Delivery Batch'}}
+            <td>
+              <div style="max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${{safeTooltip}}">
+                ${{rawItemDesc}}
+              </div>
             </td>
             <td>${{r.original_delivery_date || '-'}}</td>
             <td><strong>${{r.revised_delivery_date || r.original_delivery_date || '-'}}</strong></td>
@@ -1774,15 +1911,14 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
             <td><span style="font-size:0.75rem;color:var(--text-muted);">${{r.delay_category !== 'NONE' ? r.delay_category.replace(/_/g, ' ') : '-'}}</span></td>
             <td><strong style="color:${{r.estimated_financial_impact_usd > 0 ? 'var(--accent-red)' : 'var(--text-muted)'}};">${{riskStr}}</strong></td>
             <td>
-              <div style="font-size:0.75rem;">${{r.escalation_contact_name || r.contact_name}}</div>
-              <div style="font-size:0.7rem;color:var(--text-dim);font-family:monospace;">${{r.escalation_contact_phone || r.phone_number}}</div>
+              <span style="font-size:0.82rem; font-weight:500; color:var(--text-main);">${{cleanLead}}</span>
             </td>
             <td>
-              <div style="display: flex; gap: 0.35rem; align-items: center;">
-                <button class="btn btn-secondary" style="padding: 0.25rem 0.55rem; font-size: 0.72rem;" onclick="event.stopPropagation(); openCallModal('${{r.call_id}}')">
-                  View
+              <div style="display: flex; gap: 0.4rem; align-items: center;">
+                <button class="btn-action-view" onclick="event.stopPropagation(); openCallModal('${{r.call_id}}')" title="Inspect call transcript for ${{r.order_id}}">
+                  👁️ View Call
                 </button>
-                <button class="btn btn-primary" style="padding: 0.25rem 0.55rem; font-size: 0.72rem;" onclick="event.stopPropagation(); openNewCallModal('${{r.order_id}}')" title="Place verification call for ${{r.order_id}}">
+                <button class="btn btn-primary" style="padding: 0.32rem 0.65rem; font-size: 0.72rem; font-weight:600;" onclick="event.stopPropagation(); openNewCallModal('${{r.order_id}}')" title="Place verification call for ${{r.order_id}}">
                   📞 Call
                 </button>
               </div>
@@ -1842,11 +1978,11 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
                 <span>👤 ${{r.escalation_contact_name || r.contact_name}}</span>
                 <span style="font-family:monospace;">${{r.escalation_contact_phone || r.phone_number}}</span>
               </div>
-              <div style="display: flex; gap: 0.35rem; align-items: center;">
-                <button class="btn btn-secondary" style="padding: 0.25rem 0.55rem; font-size: 0.72rem;" onclick="event.stopPropagation(); openCallModal('${{r.call_id}}')">
-                  View
+              <div style="display: flex; gap: 0.4rem; align-items: center;">
+                <button class="btn-action-view" onclick="event.stopPropagation(); openCallModal('${{r.call_id}}')" title="Inspect call transcript for ${{r.order_id}}">
+                  👁️ View Call
                 </button>
-                <button class="btn btn-primary" style="padding: 0.25rem 0.55rem; font-size: 0.72rem;" onclick="event.stopPropagation(); openNewCallModal('${{r.order_id}}')" title="Place verification call for ${{r.order_id}}">
+                <button class="btn btn-primary" style="padding: 0.32rem 0.65rem; font-size: 0.72rem; font-weight:600;" onclick="event.stopPropagation(); openNewCallModal('${{r.order_id}}')" title="Place verification call for ${{r.order_id}}">
                   📞 Call
                 </button>
               </div>
@@ -1907,7 +2043,7 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       if (!call) return;
 
       activeModalCall = call;
-      document.getElementById('modal-po-header').textContent = `${{call.order_id}} &bull; ${{call.supplier_name}}`;
+      document.getElementById('modal-po-header').textContent = `${{call.order_id}} • ${{call.supplier_name}}`;
       document.getElementById('modal-call-id').textContent = call.call_id;
       document.getElementById('modal-contact-name').textContent = call.contact_name;
       document.getElementById('modal-phone').textContent = call.phone_number;

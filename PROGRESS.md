@@ -742,9 +742,43 @@
   - `PROGRESS.md`
 - **Current Status & Next Steps**:
   - **Current Status**: Unified single-modal workflow implemented, popup flicker eliminated, explicit live error reporting verified, 69/69 unit tests passing.
+### [2026-09-13] - Phase 17: Web Operations Dashboard UX/UI Improvements & Usability Polish
+- **Features & Enhancements**:
+  - **Call Inspection Modal Enhancements**:
+    - Fixed raw HTML entity bug in modal title: replaced literal `&bull;` with unicode bullet `•` (`${call.order_id} • ${call.supplier_name}`).
+    - Enhanced chat bubble readability: boosted background contrast (`#1e293b` for Agent and `#1d4ed8` for Supplier) with crisp 1px borders (`rgba(148, 163, 184, 0.28)` and `#3b82f6`), text shadows, and light-theme overrides for high visibility on enterprise monitors.
+  - **Purchase Order Ledger Table Usability & Affordance**:
+    - Replaced plain text Action links with dedicated outlined button `.btn-action-view` featuring explicit icon affordance (`👁️ View Call`), alongside `📞 Call` trigger button.
+    - Increased row vertical padding by 6px (from `0.85rem` to `1.2rem`) for breathing room and horizontal row tracking.
+    - Streamlined status badges: consolidated stacked `DELAYED` + `ESCALATE` badges into a single clean primary status indicator, eliminating visual panic.
+    - Simplified ledger columns: removed noisy phone numbers and lengthy parenthetical titles from "Supplier" and "Escalation Lead" columns, preserving detailed contact information inside the inspection modal.
+    - Clean text truncation: applied standard CSS ellipsis (`max-width: 220px; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;`) and browser tooltip on hover for "Item & Quantity".
+  - **Trigger Call Dispatch Form Read-Only vs. Editable States**:
+    - Auto-populated informational fields (`Purchase Order ID`, `Committed Delivery Date`, `Supplier Contact Name`, `Item Description & Quantity`) styled with shaded background, dashed borders, and `(Auto-Populated)` badge.
+    - Highlighted `Supplier Phone Number` with active accent styling and `(Editable Destination)` badge.
+    - Polished form input padding and aligned select dropdown arrow with custom SVG arrow and consistent right padding (`2.3rem`).
+  - **Dashboard Visualizations & Clutter Reduction**:
+    - Aligned chart color semantics strictly with top KPIs: On-Time = Green, Delayed = Yellow, Partial = Info Cyan, Unreachable = Gray, Critical Escalations = Red.
+    - Replaced lightning bolt icon `⚡` on "Voice Hours Saved" KPI card with clock/timer icon `⏱️` for direct telephony time communication.
+    - Consolidated "Delay Root Cause Taxonomy" and "Risk Distribution by Supply Line" into a single consolidated widget displaying incident counts/percentages and quantified financial exposure ($) side-by-side.
+- **Automated Testing Suite Expansion (`tests/test_dashboard.py`)**:
+    - Added 5 new unit tests:
+      - `test_html_dashboard_call_inspection_modal_unicode_bullet`
+      - `test_html_dashboard_chat_bubbles_contrast`
+      - `test_html_dashboard_table_affordance_and_padding`
+      - `test_html_dashboard_readonly_and_editable_form_states`
+      - `test_html_dashboard_consolidated_analytics_widget_and_strict_colors`
+    - Expanded test suite from 69 to **74 passing tests (100% pass rate in 0.48s)**.
+- **Key Files Modified**:
+  - `src/html_dashboard.py`
+  - `output/procurement_dashboard.html`
+  - `tests/test_dashboard.py`
+  - `PROGRESS.md`
+- **Current Status & Next Steps**:
+  - **Current Status**: All user feedback incorporated, verified with 74/74 tests passing.
   - **Next Steps**:
-    1. Deploy latest codebase to Hostinger VPS (`calle.fyro.cloud`) and restart systemd service.
-    2. Respond to user <@U06FVANTNHL> with concise Slack report.
+    1. Commit and push changes to `origin/main`.
+    2. Deploy to Hostinger VPS (`calle.fyro.cloud`) and verify live service.
 
 
 

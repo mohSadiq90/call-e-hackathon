@@ -271,5 +271,51 @@ class TestHtmlDashboard(unittest.TestCase):
         self.assertNotIn("openCallModal(newRecord.call_id)", html)
 
 
+    def test_html_dashboard_call_inspection_modal_unicode_bullet(self):
+        """Validates that call modal header uses actual unicode bullet point and not raw HTML &bull;."""
+        html = render_html_dashboard(self.report)
+        self.assertIn("${call.order_id} • ${call.supplier_name}", html)
+        self.assertNotIn("${call.order_id} &bull; ${call.supplier_name}", html)
+
+    def test_html_dashboard_chat_bubbles_contrast(self):
+        """Validates high contrast chat bubble styling for agent and supplier messages."""
+        html = render_html_dashboard(self.report)
+        self.assertIn(".chat-bubble.agent", html)
+        self.assertIn("background-color: #1e293b;", html)
+        self.assertIn(".chat-bubble.supplier", html)
+        self.assertIn("background-color: #1d4ed8;", html)
+
+    def test_html_dashboard_table_affordance_and_padding(self):
+        """Validates button affordance with eye icon and increased row padding in data table."""
+        html = render_html_dashboard(self.report)
+        self.assertIn("btn-action-view", html)
+        self.assertIn("👁️ View Call", html)
+        self.assertIn("padding: 1.2rem 1rem;", html)
+
+    def test_html_dashboard_readonly_and_editable_form_states(self):
+        """Validates distinct read-only and editable visual states in Trigger Call modal."""
+        html = render_html_dashboard(self.report)
+        self.assertIn("form-input-readonly", html)
+        self.assertIn("Auto-Populated", html)
+        self.assertIn("form-input-editable", html)
+        self.assertIn("Editable Destination", html)
+
+    def test_html_dashboard_consolidated_analytics_widget_and_strict_colors(self):
+        """Validates consolidated analytics widget, clock icon on Voice Hours Saved, and strict colors."""
+        html = render_html_dashboard(self.report)
+        # Clock icon on Voice Hours Saved
+        self.assertIn("⏱️", html)
+        self.assertIn("Voice Hours Saved", html)
+        # Consolidated widget
+        self.assertIn("consolidated-panel", html)
+        self.assertIn("renderConsolidatedBarItem", html)
+        self.assertIn("Delay Root Causes & Financial Exposure", html)
+        # Strict KPI colors
+        self.assertIn("var(--accent-green)", html)
+        self.assertIn("var(--accent-amber)", html)
+        self.assertIn("#64748b", html)
+
+
 if __name__ == "__main__":
     unittest.main()
+
