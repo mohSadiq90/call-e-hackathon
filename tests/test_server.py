@@ -159,6 +159,76 @@ class TestServerAPI(unittest.TestCase):
         self.assertEqual(data["result"]["order_id"], "PO-77777")
         self.assertEqual(len(state.call_results), initial_count + 1)
 
+    def test_api_trigger_call_live_invalid_key_error(self):
+        """POST /api/calls/trigger with invalid placeholder API key should return 400."""
+        payload = {
+            "supplier_id": "SUP-INVALID-KEY",
+            "supplier_name": "Invalid Key Supplier",
+            "contact_name": "Frank",
+            "phone_number": "+1-555-099-0000",
+            "order_id": "PO-KEY-ERR",
+            "item_description": "Microchips",
+            "quantity": 100,
+            "committed_delivery_date": "2026-09-30",
+            "live": True,
+            "api_key": "your_calle_api_key_here",
+        }
+        resp = self.client.post("/api/calls/trigger", json=payload)
+        self.assertEqual(resp.status_code, 400)
+        data = resp.json()
+        self.assertIn("Valid CALLE_API_KEY is required", data["detail"])
+
+    def test_api_trigger_call_live_custom_key_dispatch(self):
+        """POST /api/calls/trigger with custom valid API key should initiate live dispatch."""
+        from unittest.mock import patch
+        from src.models import CallResult, FulfillmentStatus, DelayReasonCategory
+
+        mock_result = CallResult(
+            call_id="call_custom_key_123",
+            order_id="PO-CUSTOM-KEY",
+            supplier_name="Live Custom Supplier",
+            contact_name="Alice",
+            phone_number="+15632813105",
+            call_status="COMPLETED",
+            fulfillment_status=FulfillmentStatus.ON_TIME,
+            original_delivery_date="2026-09-30",
+            revised_delivery_date="2026-09-30",
+            delay_days=0,
+            delay_category=DelayReasonCategory.NONE,
+            delay_notes="Verified via live CALL-E network.",
+            expedited_freight_cost_usd=0.0,
+            estimated_financial_impact_usd=0.0,
+            escalation_contact_name="Alice",
+            escalation_contact_phone="+15632813105",
+            escalation_required=False,
+            call_duration_seconds=92,
+            raw_transcript="Agent: Testing custom key.\nSupplier: Confirmed.",
+        )
+
+        with patch("src.server.CalleSupplierAgentClient") as mock_client_cls:
+            mock_instance = mock_client_cls.return_value
+            mock_instance.execute_call.return_value = mock_result
+
+            payload = {
+                "supplier_id": "SUP-LIVE-CUSTOM",
+                "supplier_name": "Live Custom Supplier",
+                "contact_name": "Alice",
+                "phone_number": "+1-563-281-3105",
+                "order_id": "PO-CUSTOM-KEY",
+                "item_description": "Laser Optics",
+                "quantity": 500,
+                "committed_delivery_date": "2026-09-30",
+                "live": True,
+                "api_key": "calle_live_custom_secret_12345",
+            }
+            resp = self.client.post("/api/calls/trigger", json=payload)
+            self.assertEqual(resp.status_code, 200)
+            data = resp.json()
+            self.assertTrue(data["success"])
+            self.assertTrue(data["is_live"])
+            self.assertEqual(data["result"]["call_id"], "call_custom_key_123")
+            mock_client_cls.assert_called_with(api_key="calle_live_custom_secret_12345", use_mock=False)
+
     def test_api_export_csv(self):
         """GET /api/export/csv should stream CSV data."""
         resp = self.client.get("/api/export/csv")

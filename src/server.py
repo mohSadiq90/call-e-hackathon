@@ -15,7 +15,13 @@ from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from pydantic import BaseModel, Field
 
-from config.settings import DATA_DIR, OUTPUT_DIR, DATABASE_PATH
+from config.settings import (
+    DATA_DIR,
+    OUTPUT_DIR,
+    DATABASE_PATH,
+    CALLE_API_KEY,
+    ENABLE_MOCK_SIMULATOR,
+)
 from src.database import ProcurementDatabase
 from src.models import (
     Supplier,
@@ -177,6 +183,7 @@ class TriggerCallPayload(BaseModel):
     committed_delivery_date: str = "2026-09-25"
     destination_facility: str = "DC-04 Bentonville Facility"
     live: bool = True
+    api_key: Optional[str] = None
     mock_status: Optional[str] = "ON_TIME"
     delay_days: Optional[int] = 0
     delay_category: Optional[str] = "NONE"
@@ -189,6 +196,7 @@ class TriggerBatchWorkflowPayload(BaseModel):
     category: Optional[str] = "ALL"
     max_orders: Optional[int] = 5
     live: bool = True
+    api_key: Optional[str] = None
 
 
 
@@ -402,12 +410,39 @@ def trigger_outbound_call(payload: TriggerCallPayload):
             "escalation_phone": payload.phone_number,
         }
 
-    client = CalleSupplierAgentClient(use_mock=not payload.live)
-    result = client.execute_call(
-        supplier=supp,
-        order=po,
-        scenario_override=scenario_override,
+    effective_api_key = (payload.api_key.strip() if payload.api_key else None) or CALLE_API_KEY
+    has_valid_api_key = bool(
+        effective_api_key
+        and effective_api_key not in ("your_calle_api_key_here", "calle_live_your_api_key_here")
     )
+
+    is_live = payload.live
+    use_mock = not is_live
+
+    if is_live and not has_valid_api_key:
+        if payload.api_key is not None or not ENABLE_MOCK_SIMULATOR:
+            raise HTTPException(
+                status_code=400,
+                detail="Valid CALLE_API_KEY is required for live telephony calls. Please configure CALLE_API_KEY in .env or enter your API key in the call modal.",
+            )
+        else:
+            print("[WARN] Live call requested but no valid CALLE_API_KEY configured. Falling back to offline simulator.")
+            use_mock = True
+
+    try:
+        client = CalleSupplierAgentClient(api_key=effective_api_key, use_mock=use_mock)
+        result = client.execute_call(
+            supplier=supp,
+            order=po,
+            scenario_override=scenario_override,
+        )
+    except Exception as exc:
+        print(f"[SERVER ERROR] Call execution failed: {exc}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Live CALL-E dispatch failed: {str(exc)}",
+        )
+
     if payload.recording_url:
         result.recording_url = payload.recording_url
 
@@ -419,9 +454,16 @@ def trigger_outbound_call(payload: TriggerCallPayload):
     state.reporter.export_json(state.report)
     state.reporter.export_html(state.report)
 
+    msg = (
+        f"Live outbound call successfully dispatched via CALL-E to {supp.name} ({supp.phone})"
+        if not use_mock
+        else f"Verification call executed via offline simulator for {supp.name} ({po.order_id})"
+    )
+
     return {
         "success": True,
-        "message": f"Verification call executed successfully for {supp.name} ({po.order_id})",
+        "message": msg,
+        "is_live": not use_mock,
         "result": result.model_dump(),
     }
 
@@ -451,12 +493,28 @@ def trigger_batch_workflow(payload: Optional[TriggerBatchWorkflowPayload] = None
     limit = payload.max_orders if payload.max_orders and payload.max_orders > 0 else 5
     items_to_process = items_to_process[:limit]
 
-    client = CalleSupplierAgentClient(use_mock=not payload.live)
+    effective_api_key = (payload.api_key.strip() if payload.api_key else None) or CALLE_API_KEY
+    has_valid_api_key = bool(
+        effective_api_key
+        and effective_api_key not in ("your_calle_api_key_here", "calle_live_your_api_key_here")
+    )
+    is_live = payload.live
+    use_mock = not is_live
+    if is_live and not has_valid_api_key:
+        if payload.api_key is not None or not ENABLE_MOCK_SIMULATOR:
+            raise HTTPException(
+                status_code=400,
+                detail="Valid CALLE_API_KEY is required for live telephony calls. Please configure CALLE_API_KEY in .env or provide your API key in the batch request.",
+            )
+        else:
+            use_mock = True
+
+    client = CalleSupplierAgentClient(api_key=effective_api_key, use_mock=use_mock)
     new_results = []
     for item in items_to_process:
         supp = Supplier(**item["supplier"])
         order = PurchaseOrder(**item["order"])
-        mock_scenario = item.get("mock_scenario", {}) if not payload.live else None
+        mock_scenario = item.get("mock_scenario", {}) if use_mock else None
         res = client.execute_call(
             supplier=supp,
             order=order,

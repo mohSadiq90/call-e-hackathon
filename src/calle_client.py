@@ -15,6 +15,7 @@ from config.settings import (
     CALLE_API_KEY,
     CALLE_AGENT_ID,
     OUTBOUND_CALLER_ID,
+    CALL_TIMEOUT_SECONDS,
     ENABLE_MOCK_SIMULATOR,
     DEFAULT_DAILY_DELAY_PENALTY_USD,
 )
@@ -32,19 +33,28 @@ from src.transcript_parser import TranscriptParser
 class CalleSupplierAgentClient:
     """Client for executing and parsing outbound CALL-E supplier verification calls."""
 
-    def __init__(self, api_key: Optional[str] = None, use_mock: Optional[bool] = None):
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        use_mock: Optional[bool] = None,
+        client: Optional[Any] = None,
+    ):
         self.api_key = api_key or CALLE_API_KEY
         self.use_mock = use_mock if use_mock is not None else (ENABLE_MOCK_SIMULATOR or not self.api_key)
         self.live_sdk_available = False
+        self.client = client
 
         if not self.use_mock:
-            try:
-                import calle  # type: ignore
+            if self.client is not None:
                 self.live_sdk_available = True
-                self.client = calle.CalleClient(api_key=self.api_key)
-            except ImportError:
-                print("[WARN] calle-ai SDK package not found in environment. Falling back to Mock Simulator.")
-                self.use_mock = True
+            else:
+                try:
+                    import calle  # type: ignore
+                    self.live_sdk_available = True
+                    self.client = calle.CalleClient(api_key=self.api_key or "")
+                except ImportError:
+                    print("[WARN] calle-ai SDK package not found in environment. Falling back to Mock Simulator.")
+                    self.use_mock = True
 
     def execute_call(
         self,
@@ -77,38 +87,101 @@ class CalleSupplierAgentClient:
         order: PurchaseOrder,
         prompt: str,
     ) -> CallResult:
-        """Executes real telephony call via CALL-E Server SDK."""
-        print(f"[CALL-E LIVE] Initiating outbound call to {supplier.name} ({supplier.phone})...")
+        """Executes real telephony call via official CALL-E Server SDK."""
+        import re
+
+        # Normalize phone number to strict E.164
+        clean_phone = supplier.phone.strip()
+        raw_digits = re.sub(r"\D", "", clean_phone)
+        if clean_phone.startswith("+"):
+            normalized_phone = f"+{raw_digits}"
+        elif len(raw_digits) == 10:
+            normalized_phone = f"+1{raw_digits}"
+        else:
+            normalized_phone = f"+{raw_digits}"
+
+        print(f"[CALL-E LIVE] Initiating outbound call to {supplier.name} ({normalized_phone})...")
+
+        # Deterministic idempotency key
+        idempotency_key = f"supplier-status:{order.order_id}:{supplier.id}:{order.committed_delivery_date}:v1"
+
+        # Structured result extraction schema
+        recipient_schema = {
+            "type": "object",
+            "properties": {
+                "fulfillment_status": {
+                    "type": "string",
+                    "enum": ["ON_TIME", "DELAYED", "PARTIAL_DISPATCH", "UNREACHABLE"],
+                },
+                "revised_delivery_date": {"type": "string"},
+                "delay_days": {"type": "integer"},
+                "delay_reason_category": {
+                    "type": "string",
+                    "enum": [
+                        "NONE",
+                        "RAW_MATERIAL_SHORTAGE",
+                        "LOGISTICS_PORT_CONGESTION",
+                        "QUALITY_CONTROL_HOLD",
+                        "EQUIPMENT_BREAKDOWN",
+                        "LABOR_SHORTAGE",
+                        "OTHER",
+                    ],
+                },
+                "delay_reason_details": {"type": "string"},
+                "estimated_financial_exposure_usd": {"type": "number"},
+                "escalation_contact_name": {"type": "string"},
+                "escalation_contact_phone": {"type": "string"},
+                "requires_escalation": {"type": "boolean"},
+            },
+            "required": [
+                "fulfillment_status",
+                "revised_delivery_date",
+                "delay_days",
+                "delay_reason_category",
+                "requires_escalation",
+            ],
+        }
+
         try:
-            # Invoking CALL-E SDK
             call_task = self.client.calls.create(
-                to=supplier.phone,
-                from_number=OUTBOUND_CALLER_ID,
-                prompt=prompt,
-                agent_id=CALLE_AGENT_ID,
-                record=True,
+                task=prompt,
+                recipient={"phone": normalized_phone},
+                recipient_result_schema=recipient_schema,
+                metadata={
+                    "purchase_order_id": order.order_id,
+                    "supplier_id": supplier.id,
+                    "supplier_name": supplier.name,
+                },
+                idempotency_key=idempotency_key,
             )
-            # Await completion / poll status
-            completed_call = self.client.calls.wait_for_completion(call_task.id, timeout=180)
-            transcript_text = completed_call.transcript or ""
-            duration = getattr(completed_call, "duration_seconds", 120)
-            rec_url = (
-                getattr(completed_call, "recording_url", None)
-                or getattr(completed_call, "audio_url", None)
-                or f"https://api.heycall-e.com/v1/calls/{call_task.id}/recording"
-            )
-            return self._process_transcript_result(
-                call_id=call_id,
-                supplier=supplier,
+            task_id = call_task.get("id") or call_id
+            print(f"[CALL-E LIVE] Call task {task_id} successfully dispatched to {normalized_phone} (initial status: {call_task.get('status')})")
+
+            # Poll for completion if timeout is configured (default: wait up to 45s for live call response)
+            wait_timeout = min(45.0, float(CALL_TIMEOUT_SECONDS))
+            task_data = call_task
+            try:
+                task_data = self.client.calls.wait_for_result(
+                    task_id,
+                    interval_seconds=3.0,
+                    timeout_seconds=wait_timeout,
+                )
+                print(f"[CALL-E LIVE] Call task {task_id} reached terminal state: {task_data.get('status')}")
+            except Exception as wait_err:
+                print(f"[CALL-E LIVE] Call task {task_id} is in-flight on carrier network ({wait_err}). Retrieving intermediate status.")
+                try:
+                    task_data = self.client.calls.get(task_id)
+                except Exception:
+                    task_data = call_task
+
+            return self.from_calle_api_task(
+                task_data=task_data,
                 order=order,
-                transcript=transcript_text,
-                duration=duration,
-                call_status="COMPLETED",
-                recording_url=rec_url,
+                supplier=supplier,
             )
         except Exception as e:
-            print(f"[CALL-E ERROR] Live call failed: {e}. Falling back to simulation for continuity.")
-            return self._execute_mock_call(call_id, supplier, order, prompt)
+            print(f"[CALL-E ERROR] Live call dispatch failed: {e}")
+            raise
 
     def _execute_mock_call(
         self,
@@ -306,8 +379,10 @@ class CalleSupplierAgentClient:
     ) -> CallResult:
         """Converts a real CALL-E API call_task response into a structured CallResult."""
         recipients = task_data.get("recipients", [])
-        attempts = recipients[0].get("attempts", []) if recipients else []
+        recipient = recipients[0] if recipients else {}
+        attempts = recipient.get("attempts", []) if recipients else []
         attempt = attempts[0] if attempts else {}
+        task_status = task_data.get("status", "completed").lower()
 
         # Reconstruct natural transcript dialogue from transcript turns
         turns = attempt.get("transcript_turns", [])
@@ -318,9 +393,15 @@ class CalleSupplierAgentClient:
                 lines.append(f"{spk}: {t.get('text', '').strip()}")
             transcript = "\n".join(lines)
         else:
-            transcript = task_data.get("summary", "")
+            transcript = task_data.get("summary") or recipient.get("summary") or ""
 
-        duration = 109
+        if not transcript:
+            if task_status in ("queued", "in_progress"):
+                transcript = f"Agent: Outbound call initiated to {supplier.contact_name} at {supplier.phone} regarding Purchase Order {order.order_id}.\nTelephony carrier connection in progress..."
+            else:
+                transcript = f"Agent: Call dispatched to {supplier.phone} (Status: {task_status.upper()})."
+
+        duration = 0
         if attempt.get("started_at") and attempt.get("completed_at"):
             try:
                 t0 = datetime.fromisoformat(attempt["started_at"].replace("Z", "+00:00"))
@@ -328,22 +409,50 @@ class CalleSupplierAgentClient:
                 duration = int((t1 - t0).total_seconds())
             except Exception:
                 duration = 109
+        elif task_status == "completed":
+            duration = getattr(task_data, "duration_seconds", 109)
 
-        # Parse with TranscriptParser
-        status = TranscriptParser.parse_status(transcript)
-        revised_date = TranscriptParser.parse_revised_date(transcript, order.committed_delivery_date)
-        delay_cat = TranscriptParser.parse_delay_category(transcript)
-        freight_cost = TranscriptParser.parse_expedited_cost(transcript)
-        esc_name, esc_phone = TranscriptParser.parse_escalation_contact(transcript)
+        # Check structured result if returned by CALL-E schema extraction
+        structured = task_data.get("structured_result") or recipient.get("structured_result")
+        if structured and isinstance(structured, dict):
+            status_raw = str(structured.get("fulfillment_status", "ON_TIME")).upper()
+            try:
+                status = FulfillmentStatus(status_raw)
+            except ValueError:
+                status = FulfillmentStatus.ON_TIME
+            revised_date = structured.get("revised_delivery_date") or order.committed_delivery_date
+            delay_cat_raw = str(structured.get("delay_reason_category", "NONE"))
+            try:
+                delay_cat = DelayReasonCategory(delay_cat_raw)
+            except ValueError:
+                delay_cat = DelayReasonCategory.NONE
+            delay_days = int(structured.get("delay_days", 0))
+            freight_cost = float(structured.get("expedited_freight_cost_usd", 0.0))
+            esc_name = structured.get("escalation_contact_name") or supplier.contact_name
+            esc_phone = structured.get("escalation_contact_phone") or supplier.phone
+            delay_notes = structured.get("delay_reason_details") or task_data.get("summary") or "Structured result extracted via CALL-E."
+            escalation_required = bool(structured.get("requires_escalation", False))
+            financial_impact = float(structured.get("estimated_financial_exposure_usd", (delay_days * DEFAULT_DAILY_DELAY_PENALTY_USD) + freight_cost))
+        else:
+            # Parse with TranscriptParser
+            status = TranscriptParser.parse_status(transcript)
+            revised_date = TranscriptParser.parse_revised_date(transcript, order.committed_delivery_date)
+            delay_cat = TranscriptParser.parse_delay_category(transcript)
+            freight_cost = TranscriptParser.parse_expedited_cost(transcript)
+            esc_name, esc_phone = TranscriptParser.parse_escalation_contact(transcript)
 
-        delay_days = TranscriptParser.calculate_delay_days(order.committed_delivery_date, revised_date) if revised_date else 0
-        financial_impact = (delay_days * DEFAULT_DAILY_DELAY_PENALTY_USD) + freight_cost
+            delay_days = TranscriptParser.calculate_delay_days(order.committed_delivery_date, revised_date) if revised_date else 0
+            financial_impact = (delay_days * DEFAULT_DAILY_DELAY_PENALTY_USD) + freight_cost
+            delay_notes = task_data.get("summary") or recipient.get("summary") or f"Call completed via CALL-E telephony engine (Status: {task_status.upper()})."
+            escalation_required = (status == FulfillmentStatus.DELAYED and delay_days >= 3) or (status == FulfillmentStatus.UNREACHABLE)
 
         rec_url = (
             recording_url
             or task_data.get("recording_url")
-            or f"/api/calls/{task_data.get('id', 'call_real')}/audio"
+            or (f"/api/calls/{task_data.get('id', 'call_real')}/audio" if task_status == "completed" else None)
         )
+
+        call_status = "COMPLETED" if task_status == "completed" else task_status.upper()
 
         return CallResult(
             call_id=task_data.get("id", f"call_{uuid.uuid4().hex[:12]}"),
@@ -351,18 +460,18 @@ class CalleSupplierAgentClient:
             supplier_name=supplier.name,
             contact_name=supplier.contact_name,
             phone_number=attempt.get("phone") or supplier.phone,
-            call_status="COMPLETED" if task_data.get("status") == "completed" else task_data.get("status", "COMPLETED"),
+            call_status=call_status,
             fulfillment_status=status,
             original_delivery_date=order.committed_delivery_date,
             revised_delivery_date=revised_date or order.committed_delivery_date,
             delay_days=delay_days,
             delay_category=delay_cat,
-            delay_notes=task_data.get("summary") or "Verified live call completed via CALL-E telephony engine.",
+            delay_notes=delay_notes,
             expedited_freight_cost_usd=freight_cost,
             estimated_financial_impact_usd=financial_impact,
             escalation_contact_name=esc_name or supplier.contact_name,
             escalation_contact_phone=esc_phone or supplier.phone,
-            escalation_required=(status == FulfillmentStatus.DELAYED and delay_days >= 3),
+            escalation_required=escalation_required,
             call_duration_seconds=duration,
             timestamp=task_data.get("completed_at") or datetime.now().isoformat(),
             raw_transcript=transcript,

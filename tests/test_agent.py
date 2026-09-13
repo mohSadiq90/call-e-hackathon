@@ -4,7 +4,7 @@ import unittest
 import tempfile
 from pathlib import Path
 
-from src.models import Supplier, PurchaseOrder, FulfillmentStatus
+from src.models import Supplier, PurchaseOrder, FulfillmentStatus, DelayReasonCategory
 from src.calle_client import CalleSupplierAgentClient
 from src.reporter import ProcurementReporter
 
@@ -130,6 +130,124 @@ class TestAgentPipeline(unittest.TestCase):
         self.assertEqual(result.recording_url, "/api/calls/call_BX2osyVHhnrQgDngurhn8w/audio")
         self.assertEqual(result.expedited_freight_cost_usd, 1200.0)
         self.assertGreater(result.call_duration_seconds, 60)
+
+    def test_live_call_sdk_dispatch_success(self):
+        """Verifies that _execute_live_call invokes SDK with exact keyword arguments and handles completion."""
+        from unittest.mock import MagicMock
+
+        mock_sdk = MagicMock()
+        mock_sdk.calls.create.return_value = {
+            "id": "call_live_abc123",
+            "object": "call_task",
+            "status": "queued",
+        }
+        mock_sdk.calls.wait_for_result.return_value = {
+            "id": "call_live_abc123",
+            "object": "call_task",
+            "status": "completed",
+            "summary": "The vendor confirmed shipment is on schedule.",
+            "recipients": [
+                {
+                    "attempts": [
+                        {
+                            "phone": "+15558889999",
+                            "transcript_turns": [
+                                {"speaker": "bot", "text": "Hello, checking on PO-99999."},
+                                {"speaker": "user", "text": "Yes, it is confirmed on schedule for Sept 20."}
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+
+        live_client = CalleSupplierAgentClient(api_key="calle_live_mock_key", use_mock=False, client=mock_sdk)
+        result = live_client.execute_call(self.test_supplier, self.test_order)
+
+        # Assert calls.create received exact parameters
+        mock_sdk.calls.create.assert_called_once()
+        _, kwargs = mock_sdk.calls.create.call_args
+        self.assertIn("task", kwargs)
+        self.assertEqual(kwargs["recipient"], {"phone": "+15558889999"})
+        self.assertIn("recipient_result_schema", kwargs)
+        self.assertEqual(kwargs["metadata"]["purchase_order_id"], "PO-99999")
+        self.assertEqual(kwargs["metadata"]["supplier_id"], "SUP-TEST")
+        self.assertIn("supplier-status:PO-99999:SUP-TEST:2026-09-20:v1", kwargs["idempotency_key"])
+
+        # Assert calls.wait_for_result was called
+        mock_sdk.calls.wait_for_result.assert_called_once()
+
+        self.assertEqual(result.call_id, "call_live_abc123")
+        self.assertEqual(result.fulfillment_status, FulfillmentStatus.ON_TIME)
+        self.assertIn("PO-99999", result.raw_transcript)
+
+    def test_live_call_phone_normalization(self):
+        """Verifies that formatted phone numbers are normalized to E.164 (+15632813105)."""
+        from unittest.mock import MagicMock
+
+        supplier = Supplier(
+            id="SUP-PHONE",
+            name="Phone Test Corp",
+            contact_name="Phone Lead",
+            phone="(563) 281-3105",
+        )
+        mock_sdk = MagicMock()
+        mock_sdk.calls.create.return_value = {"id": "call_p1", "status": "queued"}
+        mock_sdk.calls.wait_for_result.return_value = {"id": "call_p1", "status": "completed"}
+
+        live_client = CalleSupplierAgentClient(api_key="calle_live_mock_key", use_mock=False, client=mock_sdk)
+        live_client.execute_call(supplier, self.test_order)
+
+        _, kwargs = mock_sdk.calls.create.call_args
+        self.assertEqual(kwargs["recipient"]["phone"], "+15632813105")
+
+    def test_live_call_error_propagation(self):
+        """Verifies that live call exceptions are propagated and NOT silently swallowed."""
+        from unittest.mock import MagicMock
+
+        mock_sdk = MagicMock()
+        mock_sdk.calls.create.side_effect = RuntimeError("CALL-E Carrier Gateway Error: Insufficient credits")
+
+        live_client = CalleSupplierAgentClient(api_key="calle_live_mock_key", use_mock=False, client=mock_sdk)
+        with self.assertRaises(RuntimeError) as ctx:
+            live_client.execute_call(self.test_supplier, self.test_order)
+
+        self.assertIn("Insufficient credits", str(ctx.exception))
+
+    def test_from_calle_api_task_with_structured_result(self):
+        """from_calle_api_task should prioritize typed structured_result from CALL-E schema extraction."""
+        task_payload = {
+            "id": "call_structured_999",
+            "status": "completed",
+            "structured_result": {
+                "fulfillment_status": "DELAYED",
+                "revised_delivery_date": "2026-09-28",
+                "delay_days": 8,
+                "delay_reason_category": "PRODUCTION_HALT",
+                "delay_reason_details": "Machine calibration failure on Line 2.",
+                "expedited_freight_cost_usd": 1500.0,
+                "estimated_financial_exposure_usd": 13500.0,
+                "escalation_contact_name": "Marcus Vance",
+                "escalation_contact_phone": "+1-555-444-3333",
+                "requires_escalation": True,
+            },
+            "summary": "Assembly line delayed 8 days.",
+            "recipients": [{"attempts": [{"phone": "+15554443333", "started_at": "2026-09-11T04:00:00Z", "completed_at": "2026-09-11T04:02:00Z"}]}],
+        }
+
+        res = CalleSupplierAgentClient.from_calle_api_task(
+            task_data=task_payload,
+            order=self.test_order,
+            supplier=self.test_supplier,
+        )
+
+        self.assertEqual(res.call_id, "call_structured_999")
+        self.assertEqual(res.fulfillment_status, FulfillmentStatus.DELAYED)
+        self.assertEqual(res.delay_days, 8)
+        self.assertEqual(res.delay_category, DelayReasonCategory.PRODUCTION_HALT)
+        self.assertEqual(res.expedited_freight_cost_usd, 1500.0)
+        self.assertEqual(res.estimated_financial_impact_usd, 13500.0)
+        self.assertTrue(res.escalation_required)
 
 
 if __name__ == "__main__":

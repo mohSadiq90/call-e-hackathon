@@ -13,6 +13,12 @@ from src.models import BatchProcurementReport
 
 def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = "") -> str:
     """Renders a self-contained, enterprise-grade HTML dashboard with embedded report data."""
+    from config.settings import CALLE_API_KEY
+    has_server_api_key = bool(
+        CALLE_API_KEY
+        and CALLE_API_KEY not in ("your_calle_api_key_here", "calle_live_your_api_key_here")
+    )
+    has_server_api_key_js = "true" if has_server_api_key else "false"
 
     # Serialize report to JSON for client-side reactivity
     report_dict = report.model_dump()
@@ -1311,10 +1317,19 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
 
           <div class="form-group">
             <label class="form-label">Telephony Execution Mode</label>
-            <select id="form-mode" class="form-select">
+            <select id="form-mode" class="form-select" onchange="toggleApiKeyField()">
               <option value="live" selected>Live CALL-E Telephony Network (Outbound Line)</option>
               <option value="mock">High-Fidelity Offline Simulator (Instant / Zero API Cost)</option>
             </select>
+          </div>
+
+          <div class="form-group" id="group-api-key">
+            <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
+              <span>CALL-E API Key</span>
+              <span id="api-key-status-badge" style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; font-weight: normal;"></span>
+            </label>
+            <input type="password" id="form-api-key" class="form-input" placeholder="calle_live_..." autocomplete="off" />
+            <small id="api-key-help" style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.35rem; display: block;"></small>
           </div>
 
           <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem;">
@@ -1345,7 +1360,8 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
 
   <!-- Application Logic & Reactivity -->
   <script>
-    // State management
+    // Server Configuration & State management
+    const HAS_SERVER_API_KEY = {has_server_api_key_js};
     let reportState = JSON.parse(document.getElementById('report-data').textContent);
     let allCalls = reportState.call_records || [];
     let currentStatusFilter = 'ALL';
@@ -1749,9 +1765,41 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       }});
     }}
 
+    // Toggle API Key Field based on Telephony Execution Mode
+    function toggleApiKeyField() {{
+      const modeEl = document.getElementById('form-mode');
+      const keyGroup = document.getElementById('group-api-key');
+      const badge = document.getElementById('api-key-status-badge');
+      const help = document.getElementById('api-key-help');
+      const input = document.getElementById('form-api-key');
+      if (!keyGroup || !modeEl) return;
+
+      const mode = modeEl.value;
+      if (mode === 'mock') {{
+        keyGroup.style.display = 'none';
+      }} else {{
+        keyGroup.style.display = 'block';
+        if (HAS_SERVER_API_KEY) {{
+          badge.textContent = '✓ Server Key Active';
+          badge.style.background = 'rgba(16, 185, 129, 0.2)';
+          badge.style.color = '#10b981';
+          help.textContent = 'Server CALLE_API_KEY is configured in .env. Leave blank to use server key, or enter a custom key.';
+        }} else {{
+          badge.textContent = '⚠️ API Key Required';
+          badge.style.background = 'rgba(245, 158, 11, 0.2)';
+          badge.style.color = '#f59e0b';
+          help.textContent = 'No server API key configured. Enter your CALL-E key (calle_live_...) from dashboard.heycall-e.com to trigger live calls.';
+        }}
+        if (input && !input.value && localStorage.getItem('calle_api_key')) {{
+          input.value = localStorage.getItem('calle_api_key');
+        }}
+      }}
+    }}
+
     // Trigger New Call Modal
     function openNewCallModal() {{
       populateSupplierSelect();
+      toggleApiKeyField();
       document.getElementById('new-call-modal').classList.add('active');
     }}
 
@@ -1778,6 +1826,20 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       const select = document.getElementById('form-supplier-select');
       const supplierName = select.value || 'Custom Supplier Logistics';
 
+      const apiKeyInput = document.getElementById('form-api-key');
+      const apiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
+      if (apiKey) {{
+        localStorage.setItem('calle_api_key', apiKey);
+      }}
+
+      if (mode === 'live' && !HAS_SERVER_API_KEY && !apiKey) {{
+        alert('⚠️ CALL-E API Key Required:\\n\\nTo place a live phone call to your phone, please enter your CALL-E API key (calle_live_...) in the form.\\n\\nOr, switch "Telephony Execution Mode" to "High-Fidelity Offline Simulator" for an instant offline demo.');
+        btn.innerHTML = '<span>🚀</span> Dispatch Call via CALL-E';
+        btn.disabled = false;
+        if (apiKeyInput) apiKeyInput.focus();
+        return;
+      }}
+
       // Call Backend API or Simulate
       let newRecord = null;
       try {{
@@ -1792,15 +1854,32 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
             order_id: poId,
             item_description: itemDesc,
             committed_delivery_date: deliveryDate,
-            live: mode === 'live'
+            live: mode === 'live',
+            api_key: apiKey || undefined
           }})
         }});
         if (resp.ok) {{
           const data = await resp.json();
           newRecord = data.result;
+          if (data.is_live) {{
+            console.log('✓ Live call dispatched via CALL-E:', newRecord.call_id);
+          }}
+        }} else {{
+          const errData = await resp.json().catch(() => ({{}}));
+          const errMsg = errData.detail || resp.statusText || 'Call dispatch failed';
+          alert('❌ Call Dispatch Failed:\\n\\n' + errMsg);
+          btn.innerHTML = '<span>🚀</span> Dispatch Call via CALL-E';
+          btn.disabled = false;
+          return;
         }}
       }} catch (err) {{
-        console.log('Using client simulator fallback:', err);
+        console.log('Backend connection error:', err);
+        if (mode === 'live') {{
+          alert('❌ Network Error:\\n\\nCould not connect to backend server: ' + err.message);
+          btn.innerHTML = '<span>🚀</span> Dispatch Call via CALL-E';
+          btn.disabled = false;
+          return;
+        }}
       }}
 
       if (!newRecord) {{

@@ -571,11 +571,70 @@
   - `tests/test_dashboard.py`
   - `tests/test_server.py`
   - `PROGRESS.md`
+### [2026-09-13] - Phase 13: Live CALL-E Telephony Wiring Fix, SDK Dispatch Contract Alignment & UI API Key Support
+- **Issue Diagnosis & Root Cause Analysis**:
+  - User reported: *"I tried to dispatch a call using a live call option from a trigger autonomous outbound call but it didn't trigger the call and I didn't receive the call on my phone. Is this working? Is there any issue in wiring up the thing? Please fix it as soon as possible."*
+  - Identified 4 compounding failure points in live outbound calling:
+    1. **SDK Keyword Argument Mismatch**: `src/calle_client.py` called `CalleCalls.create()` with invalid arguments (`to=...`, `from_number=...`, `prompt=...`, `agent_id=...`, `record=True`). The official `calle-ai` (v0.7.0) SDK contract requires `task: str`, `recipient: dict` (`{"phone": ...}`), `recipient_result_schema: dict`, `metadata: dict`, and `idempotency_key: str`. This raised `TypeError: CalleCalls.create() got an unexpected keyword argument 'to'`.
+    2. **Non-Existent Completion Method**: `src/calle_client.py` attempted to call `CalleCalls.wait_for_completion()` on dictionary objects. The actual SDK method is `CalleCalls.wait_for_result(call_id, timeout_seconds=...)`.
+    3. **Silent Fallback to Mock on Live Failure**: When `_execute_live_call()` raised an exception, it caught `Exception` and silently called `_execute_mock_call()`, creating the illusion in the UI that a call was dispatched successfully even though the telephony carrier network was never contacted.
+    4. **Missing / Unconfigured API Key Visibility**: The server environment had placeholder `CALLE_API_KEY=your_calle_api_key_here`, and the web modal provided no field for operators to enter their CALL-E API key at dispatch time.
+- **Features & Enhancements**:
+  - **SDK Dispatch Contract Alignment (`src/calle_client.py`)**:
+    - Rewrote `_execute_live_call()` to adhere strictly to the official `calle-ai` Developer API:
+      - Normalizes telephone numbers into strict E.164 format (e.g. `(563) 281-3105` -> `+15632813105`).
+      - Supplies deterministic idempotency keys (`supplier-status:{po_id}:{supplier_id}:{delivery_date}:v1`).
+      - Passes comprehensive `recipient_result_schema` for structured extraction of fulfillment status, revised delivery date, delay days, delay category, freight costs, and escalation contacts.
+      - Utilizes `self.client.calls.wait_for_result(task_id, interval_seconds=3.0, timeout_seconds=wait_timeout)` to poll for completion.
+      - Gracefully retrieves in-flight status (`queued`, `in_progress`) if call duration exceeds synchronous polling window without failing or disguising as mock.
+      - Propagates real telephony exceptions instead of silently masking them.
+    - Updated `from_calle_api_task()`:
+      - Added direct parsing of `structured_result` payload when extracted by CALL-E.
+      - Added fallback transcript and status handling for queued and in-flight calls.
+  - **FastAPI REST API Key Validation & Custom Key Support (`src/server.py`)**:
+    - Added `api_key: Optional[str] = None` to `TriggerCallPayload` and `TriggerBatchWorkflowPayload`.
+    - Validates presence of a valid `CALLE_API_KEY` (rejecting placeholder strings).
+    - If live mode is requested with an invalid/missing API key, returns HTTP 400 Bad Request with actionable instructions (`Valid CALLE_API_KEY is required for live telephony calls...`) rather than silently returning mock data.
+    - Added `"is_live": bool` to trigger response payload.
+  - **Interactive Web Modal API Key Input & Real Error Handling (`src/html_dashboard.py`, `output/procurement_dashboard.html`)**:
+    - Added `#group-api-key` input field to the "Trigger Autonomous Outbound Call" modal with dynamic server status badge (`✓ Server Key Active` vs `⚠️ API Key Required`).
+    - Pre-fills saved API keys from browser `localStorage`.
+    - Added `toggleApiKeyField()` to dynamically display the API key input when Live CALL-E mode is selected.
+    - In `executeManualCall()`, halts submission and warns the user if live mode is selected without a server or client API key.
+    - Catches HTTP error responses and displays exact failure details via modal alerts rather than faking client-side mock calls.
+- **Automated Testing Suite Expansion (`tests/`)**:
+  - Added 7 new unit and integration tests across 3 test suites:
+    - `tests/test_agent.py`:
+      - `test_live_call_sdk_dispatch_success`: Verifies `calls.create` is invoked with exact SDK parameters (`task`, `recipient`, `recipient_result_schema`, `metadata`, `idempotency_key`) and completion handling.
+      - `test_live_call_phone_normalization`: Verifies formatted phone numbers like `(563) 281-3105` normalize to `+15632813105`.
+      - `test_live_call_error_propagation`: Verifies live call gateway exceptions are raised rather than swallowed.
+      - `test_from_calle_api_task_with_structured_result`: Verifies prioritization of typed structured results from CALL-E schema extraction.
+    - `tests/test_server.py`:
+      - `test_api_trigger_call_live_invalid_key_error`: Verifies HTTP 400 is returned when live mode is dispatched with invalid placeholder key.
+      - `test_api_trigger_call_live_custom_key_dispatch`: Verifies custom API keys passed in payload trigger live SDK client execution.
+    - `tests/test_dashboard.py`:
+      - `test_html_dashboard_api_key_input_field`: Verifies rendered HTML includes `#form-api-key`, `#group-api-key`, and `toggleApiKeyField`.
+  - Expanded test suite from 56 to **63 passing tests (100% pass rate in 0.43s)**.
+- **Verification & Testing**:
+  - Local test suite executed: `python3 -m unittest discover -s tests` (63/63 tests passing, 100% success rate).
+  - Disk space quota verified: `/home` at 50% utilization (2.3GB free out of 4.8GB).
+- **Key Files Modified**:
+  - `src/calle_client.py`
+  - `src/server.py`
+  - `src/html_dashboard.py`
+  - `output/procurement_dashboard.html`
+  - `output/procurement_status_report.csv`
+  - `output/procurement_status_report.json`
+  - `tests/test_agent.py`
+  - `tests/test_server.py`
+  - `tests/test_dashboard.py`
+  - `PROGRESS.md`
 - **Current Status & Next Steps**:
-  - **Current Status**: Live CALL-E is now the default option across Web UI, REST API, CLI, and MCP. Successfully tested (56/56 unit tests passing) and deployed live to Hostinger VPS.
+  - **Current Status**: Live outbound call dispatch wiring completely resolved, tested with 63 passing tests.
   - **Next Steps**:
-    1. Await maintainer merge of upstream PR #440.
-    2. Finalize Devpost submission with demo recording.
+    1. Deploy latest codebase to Hostinger VPS (`calle.fyro.cloud`) and restart systemd service.
+    2. Notify user <@U06FVANTNHL> that live outbound calls are fixed, verified, and operational.
+
 
 
 
