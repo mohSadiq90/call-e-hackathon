@@ -1519,6 +1519,32 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       }}
     }}
 
+    /* Reusable Shimmer Animation for API Calls and Data Loading States */
+    @keyframes shimmerWave {{
+      0% {{ background-position: -200% 0; }}
+      100% {{ background-position: 200% 0; }}
+    }}
+    .skeleton-shimmer {{
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 25%, rgba(255, 255, 255, 0.12) 37%, rgba(255, 255, 255, 0.04) 63%);
+      background-size: 200% 100%;
+      animation: shimmerWave 1.4s ease-in-out infinite;
+      border-radius: 6px;
+      display: inline-block;
+    }}
+    .skeleton-bar {{
+      height: 14px;
+      width: 100%;
+    }}
+    .skeleton-bar-sm {{
+      height: 10px;
+      width: 60%;
+    }}
+    .skeleton-pill {{
+      height: 22px;
+      width: 70px;
+      border-radius: 12px;
+    }}
+
     /* Print styling */
     @media print {{
       header.top-nav, .controls-bar, .nav-actions, .modal-overlay, footer {{
@@ -2974,8 +3000,67 @@ def render_html_dashboard(report: BatchProcurementReport, api_base_url: str = ""
       }}
     }});
 
+    // Reusable Shimmer Animation Utilities (Available across all views & screens)
+    function renderTableShimmer(rowCount = 4) {{
+      const tbody = document.getElementById('table-body');
+      if (!tbody) return;
+      let rowsHtml = '';
+      for (let i = 0; i < rowCount; i++) {{
+        rowsHtml += `
+          <tr class="shimmer-row" data-testid="shimmer-row">
+            <td style="padding: 1.2rem 1rem;"><div class="skeleton-shimmer skeleton-bar" style="width: 80px;"></div></td>
+            <td style="padding: 1.2rem 1rem;">
+              <div class="skeleton-shimmer skeleton-bar" style="width: 140px; margin-bottom: 6px;"></div>
+              <div class="skeleton-shimmer skeleton-bar-sm" style="width: 90px;"></div>
+            </td>
+            <td style="padding: 1.2rem 1rem;"><div class="skeleton-shimmer skeleton-pill"></div></td>
+            <td style="padding: 1.2rem 1rem;"><div class="skeleton-shimmer skeleton-bar" style="width: 75px;"></div></td>
+            <td style="padding: 1.2rem 1rem;"><div class="skeleton-shimmer skeleton-pill" style="width: 90px;"></div></td>
+            <td style="padding: 1.2rem 1rem;"><div class="skeleton-shimmer skeleton-bar" style="width: 60px;"></div></td>
+            <td style="padding: 1.2rem 1rem;"><div class="skeleton-shimmer skeleton-bar" style="width: 85px;"></div></td>
+            <td style="padding: 1.2rem 1rem;"><div class="skeleton-shimmer skeleton-bar" style="width: 100px;"></div></td>
+            <td style="padding: 1.2rem 1rem;"><div class="skeleton-shimmer skeleton-pill" style="width: 80px;"></div></td>
+          </tr>
+        `;
+      }}
+      tbody.innerHTML = rowsHtml;
+    }}
+
+    function renderCardsShimmer(cardCount = 4) {{
+      const grid = document.getElementById('cards-container');
+      if (!grid) return;
+      let cardsHtml = '';
+      for (let i = 0; i < cardCount; i++) {{
+        cardsHtml += `
+          <div class="call-card shimmer-card" data-testid="shimmer-card" style="padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <div class="skeleton-shimmer skeleton-bar" style="width: 90px; height: 16px;"></div>
+              <div class="skeleton-shimmer skeleton-pill" style="width: 70px;"></div>
+            </div>
+            <div class="skeleton-shimmer skeleton-bar" style="width: 75%; height: 18px; margin-bottom: 8px;"></div>
+            <div class="skeleton-shimmer skeleton-bar-sm" style="width: 50%; margin-bottom: 16px;"></div>
+            <div style="background: rgba(255,255,255,0.02); padding: 10px; border-radius: 8px; margin-bottom: 16px;">
+              <div class="skeleton-shimmer skeleton-bar" style="width: 100%; height: 12px; margin-bottom: 6px;"></div>
+              <div class="skeleton-shimmer skeleton-bar" style="width: 80%; height: 12px;"></div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <div class="skeleton-shimmer skeleton-pill" style="flex: 1; height: 36px; border-radius: 6px;"></div>
+              <div class="skeleton-shimmer skeleton-pill" style="flex: 1; height: 36px; border-radius: 6px;"></div>
+            </div>
+          </div>
+        `;
+      }}
+      grid.innerHTML = cardsHtml;
+    }}
+
+    function showShimmerLoading() {{
+      renderTableShimmer();
+      renderCardsShimmer();
+    }}
+
     // Live Backend Synchronization with Python FastAPI Server & SQLite
     async function syncWithBackend(manual = false) {{
+      if (manual) showShimmerLoading();
       const ind = document.getElementById('backend-status-indicator');
       const txt = document.getElementById('backend-status-text');
       const dot = document.getElementById('backend-pulse-dot');

@@ -351,6 +351,23 @@ class TestHtmlDashboard(unittest.TestCase):
         self.assertIn("-webkit-tap-highlight-color: transparent;", html)
         self.assertIn("min-height: 44px;", html)
 
+    def test_html_dashboard_reusable_shimmer_animation(self):
+        """Dashboard HTML includes reusable CSS shimmer animations and JS skeleton loading functions."""
+        html = render_html_dashboard(self.report)
+
+        # 1. CSS shimmer animation keyframes and classes
+        self.assertIn("@keyframes shimmerWave", html)
+        self.assertIn(".skeleton-shimmer", html)
+        self.assertIn(".skeleton-bar", html)
+        self.assertIn(".skeleton-pill", html)
+
+        # 2. Reusable JavaScript shimmer loader utilities
+        self.assertIn("renderTableShimmer", html)
+        self.assertIn("renderCardsShimmer", html)
+        self.assertIn("showShimmerLoading", html)
+        self.assertIn("shimmer-row", html)
+        self.assertIn("shimmer-card", html)
+
 
 if __name__ == "__main__":
     unittest.main()
