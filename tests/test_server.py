@@ -121,9 +121,9 @@ class TestServerAPI(unittest.TestCase):
             "quantity": 2500,
             "unit_cost_usd": 15.00,
             "total_value_usd": 37500.00,
-            "committed_delivery_date": "2026-09-28",
+            "committed_delivery_date": "2026-09-30", "authorization_confirmed": True, "destination_authorized": True,
             "destination_facility": "DC-04 Bentonville",
-            "live": False,
+            "live": False, "authorization_confirmed": True, "destination_authorized": True,
             "mock_status": "ON_TIME",
             "delay_days": 0,
             "delay_category": "NONE",
@@ -152,7 +152,7 @@ class TestServerAPI(unittest.TestCase):
             "quantity": 1500,
             "unit_cost_usd": 45.00,
             "total_value_usd": 67500.00,
-            "committed_delivery_date": "2026-09-30",
+            "committed_delivery_date": "2026-09-30", "authorization_confirmed": True, "destination_authorized": True,
             "destination_facility": "DC-02 Chicago",
         }
         mock_result = CallResult(
@@ -202,8 +202,8 @@ class TestServerAPI(unittest.TestCase):
             "order_id": "PO-NO-KEY",
             "item_description": "Parts",
             "quantity": 10,
-            "committed_delivery_date": "2026-09-30",
-            "live": True,
+            "committed_delivery_date": "2026-09-30", "authorization_confirmed": True, "destination_authorized": True,
+            "live": True, "authorization_confirmed": True, "destination_authorized": True,
         }
         with patch("src.server.CALLE_API_KEY", ""):
             resp = self.client.post("/api/calls/trigger", json=payload)
@@ -221,8 +221,8 @@ class TestServerAPI(unittest.TestCase):
             "order_id": "PO-KEY-ERR",
             "item_description": "Microchips",
             "quantity": 100,
-            "committed_delivery_date": "2026-09-30",
-            "live": True,
+            "committed_delivery_date": "2026-09-30", "authorization_confirmed": True, "destination_authorized": True,
+            "live": True, "authorization_confirmed": True, "destination_authorized": True,
             "api_key": "your_calle_api_key_here",
         }
         resp = self.client.post("/api/calls/trigger", json=payload)
@@ -269,8 +269,8 @@ class TestServerAPI(unittest.TestCase):
                 "order_id": "PO-CUSTOM-KEY",
                 "item_description": "Laser Optics",
                 "quantity": 500,
-                "committed_delivery_date": "2026-09-30",
-                "live": True,
+                "committed_delivery_date": "2026-09-30", "authorization_confirmed": True, "destination_authorized": True,
+                "live": True, "authorization_confirmed": True, "destination_authorized": True,
                 "api_key": "calle_live_custom_secret_12345",
             }
             resp = self.client.post("/api/calls/trigger", json=payload)
@@ -322,8 +322,8 @@ class TestServerAPI(unittest.TestCase):
                     "order_id": "PO-ENV-KEY",
                     "item_description": "Laser Optics",
                     "quantity": 500,
-                    "committed_delivery_date": "2026-09-30",
-                    "live": True,
+                    "committed_delivery_date": "2026-09-30", "authorization_confirmed": True, "destination_authorized": True,
+                    "live": True, "authorization_confirmed": True, "destination_authorized": True,
                 }
                 resp = self.client.post("/api/calls/trigger", json=payload)
                 self.assertEqual(resp.status_code, 200)
@@ -354,7 +354,7 @@ class TestServerAPI(unittest.TestCase):
         payload = {
             "category": "Critical Electronics",
             "max_orders": 2,
-            "live": False,
+            "live": False, "authorization_confirmed": True, "destination_authorized": True,
         }
         resp = self.client.post("/api/workflow/trigger-batch", json=payload)
         self.assertEqual(resp.status_code, 200)

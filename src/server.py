@@ -190,6 +190,8 @@ class TriggerCallPayload(BaseModel):
     delay_reason: Optional[str] = "Shipment on schedule."
     expedited_freight_cost: Optional[float] = 0.0
     recording_url: Optional[str] = None
+    authorization_confirmed: bool = False
+    destination_authorized: bool = False
 
 
 class TriggerBatchWorkflowPayload(BaseModel):
@@ -197,6 +199,8 @@ class TriggerBatchWorkflowPayload(BaseModel):
     max_orders: Optional[int] = 5
     live: bool = True
     api_key: Optional[str] = None
+    authorization_confirmed: bool = False
+    destination_authorized: bool = False
 
 
 
@@ -389,6 +393,24 @@ def trigger_outbound_call(payload: TriggerCallPayload):
     Executes a new outbound supplier verification call via CALL-E SDK or high-fidelity simulation.
     Appends the structured outcome to state and updates reports.
     """
+    if not payload.authorization_confirmed or not payload.destination_authorized:
+        raise HTTPException(status_code=400, detail="Explicit run and destination authorization required.")
+    
+    if not payload.order_id or not payload.supplier_id or not payload.phone_number:
+        raise HTTPException(status_code=400, detail="Ambiguous or missing order/supplier inputs.")
+
+    import datetime
+    today_str = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
+    idempotency_key = f"supplier-status:{payload.order_id}:{payload.supplier_id}:{today_str}:v1"
+    
+    # Simple deduplication check in memory
+    if not hasattr(state, 'dispatched_keys'):
+        state.dispatched_keys = set()
+    if idempotency_key in state.dispatched_keys:
+        raise HTTPException(status_code=409, detail="Duplicate call request detected for this order today.")
+    
+    state.dispatched_keys.add(idempotency_key)
+
     supp = Supplier(
         id=payload.supplier_id,
         name=payload.supplier_name,
@@ -457,6 +479,40 @@ def trigger_outbound_call(payload: TriggerCallPayload):
 
     if payload.recording_url:
         result.recording_url = payload.recording_url
+        
+    # Mask Returned Phone Content
+    import re
+    def mask_phone_number(phone: str) -> str:
+        if not phone: return phone
+        digits = re.findall(r"\d", phone)
+        if len(digits) < 10: return phone
+        count = 0
+        total = len(digits)
+        res = ""
+        for ch in phone:
+            if ch.isdigit():
+                count += 1
+                if count <= 4 or count > total - 4:
+                    res += ch
+                else:
+                    res += "*"
+            else:
+                res += ch
+        return re.sub(r"\*+", "***", res)
+        
+    result.phone_number = mask_phone_number(result.phone_number)
+    if result.escalation_contact_phone:
+        result.escalation_contact_phone = mask_phone_number(result.escalation_contact_phone)
+    if result.raw_transcript:
+        # Also mask phone numbers in transcript
+        result.raw_transcript = re.sub(
+            r'(\+?\d{1,3}[-.\s]?\d{3}[-.\s]?\d{3,4}[-.\s]?\d{4})',
+            lambda m: mask_phone_number(m.group(0)),
+            result.raw_transcript
+        )
+        
+    # Exclude provider-specific telemetry and carrier trace headers
+    # (Removed by design/contract)
 
     # Prepend new result to state & SQLite DB
     state.call_results.insert(0, result)
@@ -489,6 +545,9 @@ def trigger_batch_workflow(payload: Optional[TriggerBatchWorkflowPayload] = None
     """
     if payload is None:
         payload = TriggerBatchWorkflowPayload()
+        
+    if not payload.authorization_confirmed or not payload.destination_authorized:
+        raise HTTPException(status_code=400, detail="Explicit run and destination authorization required.")
 
     dataset_path = state.data_path if state.data_path.exists() else (DATA_DIR / "suppliers.json")
     with open(dataset_path, "r", encoding="utf-8") as f:

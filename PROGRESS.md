@@ -849,3 +849,12 @@
 
 
 
+### [2026-09-23] - Phase 20: Mandatory Authorization, Idempotency, and Data Masking Security Hardening
+- **Features & Enhancements**:
+  - **Explicit Run & Destination Authorization**: Added strict validation gates to `TriggerCallPayload` and `TriggerBatchWorkflowPayload` in `src/server.py`. Required `authorization_confirmed: true` and `destination_authorized: true` before initiating live network carrier dispatch to ensure direct operator intent.
+  - **Ambiguity & Deduplication Contract**: Enforced a fail-closed ambiguity check (aborting immediately on missing order ID, supplier ID, or phone number). Implemented in-memory deterministic idempotency validation utilizing `{po}:{supplier}:{date}` keys to stop accidental redialing or duplicate network dispatches.
+  - **Data Masking (Phone Numbers)**: Developed `mask_phone_number` utility that sanitizes actual telephone strings (e.g. `+1-555-888-9923` to `+1-555-***-9923`). Applied masking across `CallResult.phone_number`, `CallResult.escalation_contact_phone`, and injected regex filtering on `CallResult.raw_transcript` to permanently scrub actual telephone identifiers from all downstream API JSON, aggregate CSV reports, and UI dashboards.
+  - **Test Suite Updates**: Patched `tests/test_server.py` test cases to correctly transmit the new mandatory `authorization_confirmed` and `destination_authorized` boolean flags.
+- **Current Status & Next Steps**:
+  - Maintained 100% test pass rate with security fixes fully integrated. 
+  - Ready for immediate remote synchronization.
