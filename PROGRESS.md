@@ -865,3 +865,21 @@
   - **Workflow & Use Case Design**: Defined a user flow where users can access the web dashboard remotely, view reports, and trigger the verification workflow directly from the web interface.
 - **Current Status & Next Steps**:
   - Waiting for user approval on the proposed Nginx reverse proxy + Systemd deployment flow before making implementation changes.
+
+### [2026-09-23] - Phase 22: Revised VPS Hosting, Configuration & Security Plan
+- **Features & Enhancements Planned**:
+  - **Dynamic Database Configuration**: 
+    - Remove all hardcoded test phone numbers and environment variables from the codebase (like `OUTBOUND_CALLER_ID` or fallback numbers).
+    - Create a settings/configuration page on the web dashboard to input all necessary API keys, phone numbers, and parameters.
+    - Store this configuration securely in the SQLite database and retrieve it dynamically at runtime.
+  - **Web-Triggered Workflows**:
+    - Allow users to trigger all calls and workflows directly from the web interface using the dynamically stored configurations.
+  - **Demo Login / Authentication**:
+    - Build a login screen to protect the dashboard and configuration pages.
+    - Provide static/demo credentials (e.g., `calle_judge` / `demo2026`) specifically for hackathon judges to review the application securely.
+  - **VPS Deployment Strategy**:
+    - Deploy the application to the Hostinger VPS at `72.61.224.120` using the `fyro.cloud` subdomain.
+    - Configure Nginx as a reverse proxy with Let's Encrypt SSL.
+    - Run the application via Systemd for persistent availability.
+- **Current Status & Next Steps**:
+  - Waiting for user approval on this revised configuration, login, and deployment plan before implementation.
