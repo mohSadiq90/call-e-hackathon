@@ -858,3 +858,10 @@
 - **Current Status & Next Steps**:
   - Maintained 100% test pass rate with security fixes fully integrated. 
   - Ready for immediate remote synchronization.
+
+### [2026-09-23] - Phase 21: VPS Hosting Planning and Workflow Design
+- **Features & Enhancements**:
+  - **Hostinger VPS & Domain Planning**: Planned the deployment architecture for hosting the CALL-E project on a Hostinger VPS using a `fyro.cloud` subdomain.
+  - **Workflow & Use Case Design**: Defined a user flow where users can access the web dashboard remotely, view reports, and trigger the verification workflow directly from the web interface.
+- **Current Status & Next Steps**:
+  - Waiting for user approval on the proposed Nginx reverse proxy + Systemd deployment flow before making implementation changes.
