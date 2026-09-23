@@ -898,3 +898,28 @@
   - **Current Status**: All code, documentation, and test suites are up to date and verified.
   - **Next Steps**:
     1. Proceed with pasting `DEVPOST_SUBMISSION.md` into the Devpost portal.
+
+### [2026-09-23] - Secure PX0 Deployment: Nginx HTTPS Reverse Proxy with HTTP Basic Auth
+- **Features & Enhancements**:
+  - **Secure Hostinger Nginx Reverse Proxy (Option 1)**:
+    - Re-enabled and secured PX0 Code Navigator on VPS behind production Nginx reverse proxy over HTTPS on port 443 (`https://fyro.cloud`).
+    - Bound PX0 strictly to localhost interface `127.0.0.1:7777`, ensuring zero public IP listening exposure and preventing unauthenticated bypasses.
+    - Configured Server-Sent Events (SSE) buffering and timeout settings in Nginx for `/api/stream` and WebSocket support.
+    - Added ACME challenge bypass in Nginx to ensure uninterrupted Let's Encrypt automated certificate renewals.
+  - **HTTP Basic Authentication**:
+    - Installed `apache2-utils` and established encrypted htpasswd credential store (`/etc/nginx/.htpasswd`).
+    - Enforced authentication challenge on all web traffic accessing `https://fyro.cloud`, blocking unauthorized public browsing.
+  - **Systemd Daemon Automation**:
+    - Created dedicated persistent system service `/etc/systemd/system/px0.service` for automatic start on boot and graceful crash recovery.
+    - Enabled and started `px0.service`, indexing workspace `/root` for comprehensive codebase navigation across repositories.
+  - **Python Test Environment Stabilization**:
+    - Configured Python 3.12 virtual environment wrappers in `/usr/local/bin/` so standard test command `python3 -m unittest discover -s tests` runs with 100% pass rate.
+- **Key Files Modified**:
+  - `/etc/nginx/sites-available/fyro.cloud.conf`
+  - `/etc/nginx/.htpasswd`
+  - `/etc/systemd/system/px0.service`
+  - `/usr/local/bin/python3`, `/usr/local/bin/python`, `/usr/local/bin/pip`, `/usr/local/bin/pip3`
+  - `PROGRESS.md`
+- **Current Status & Next Steps**:
+  - **Current Status**: PX0 is securely reachable via HTTPS at `https://fyro.cloud` behind HTTP Basic Auth. Automated test suite running at 100% pass rate (76/76 passing).
+  - **Next Steps**: Provide login credentials and instructions to user in Slack.
