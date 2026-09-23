@@ -10,7 +10,7 @@ This document provides the complete, authoritative, and finalized text ready to 
 - **Submission Pull Request**: [CALLE-AI/awesome-phone-call-agents#440](https://github.com/CALLE-AI/awesome-phone-call-agents/pull/440)
 - **Live Hosted Application**: [https://calle.fyro.cloud](https://calle.fyro.cloud)
 - **GitHub Repository**: [https://github.com/mohSadiq90/call-e-hackathon](https://github.com/mohSadiq90/call-e-hackathon)
-- **Automated Test Suite**: **54/54 Passing Tests (100% Pass Rate)**
+- **Automated Test Suite**: **76/76 Passing Tests (100% Pass Rate)**
 
 ---
 
@@ -52,7 +52,7 @@ python, calle-ai, voice-ai, telephony, mcp, model-context-protocol, fastapi, sql
 | 22 | `csv-export` | Automated generation of ERP-ready `procurement_status_report.csv` spreadsheets. |
 | 23 | `json` | Structured JSON audit ledger (`procurement_status_report.json`) for corporate data pipelines. |
 | 24 | `uvicorn` | Production ASGI server powering live deployment on Hostinger VPS (`calle.fyro.cloud`). |
-| 25 | `unit-testing` | 100% automated test pass rate (54/54 tests) covering models, database, parsers, dashboard, and API. |
+| 25 | `unit-testing` | 100% automated test pass rate (76/76 tests) covering models, database, parsers, dashboard, and API. |
 
 ---
 
@@ -150,7 +150,7 @@ We engineered the application from the ground up with modular enterprise archite
   - Deployed live on a Hostinger Ubuntu VPS under [https://calle.fyro.cloud](https://calle.fyro.cloud) with Nginx reverse proxy, Let's Encrypt SSL/TLS, and automated `systemd` daemon supervision.
 
 - **Comprehensive Automated Testing (`tests/`)**:
-  - Built an exhaustive 54-test automated suite covering models, transcript parsing, SQLite persistence, REST endpoints, HTML dashboard rendering, and MCP protocols with **100% pass rate in < 0.5 seconds**.
+  - Built an exhaustive 76-test automated suite covering models, transcript parsing, SQLite persistence, REST endpoints, HTML dashboard rendering, and MCP protocols with **100% pass rate in < 0.6 seconds**.
 
 ---
 
@@ -191,7 +191,7 @@ We engineered the application from the ground up with modular enterprise archite
 
 - **Live Production Deployment**: Deployed the complete application to a live public HTTPS endpoint at [https://calle.fyro.cloud](https://calle.fyro.cloud) with Nginx, Let's Encrypt SSL, and systemd automation.
 - **Official Open-Source Contribution**: Submitted and verified Pull Request **[PR #440](https://github.com/CALLE-AI/awesome-phone-call-agents/pull/440)** to the official `CALLE-AI/awesome-phone-call-agents` repository, passing all upstream validation checks.
-- **54/54 Automated Unit & Integration Tests**: 100% test pass rate across data models, SQLite persistence, REST endpoints, transcript parsing, dashboard rendering, and MCP protocols.
+- **76/76 Automated Unit & Integration Tests**: 100% test pass rate across data models, SQLite persistence, REST endpoints, transcript parsing, dashboard rendering, and MCP protocols.
 - **5 Supported Integration Modalities**: Shipped complete support for Python SDK, REST API, JSON-RPC 2.0 MCP Server, CLI, and Agent Skill manifest in a single cohesive repository.
 - **Verified Real CALL-E Telephony Telemetry**: Captured and integrated real live call telemetry (`call_BX2osyVHhnrQgDngurhn8w`) verified through the official CALL-E platform.
 - **Zero-Credit Developer Experience**: Developers and judges can clone the repository and experience the full end-to-end interactive dashboard and CLI immediately without entering an API key.

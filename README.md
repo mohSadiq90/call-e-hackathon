@@ -2,7 +2,7 @@
 
 [![Python 3.12](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests: Passing](https://img.shields.io/badge/Tests-54%2F54%20Passing-brightgreen.svg)]()
+[![Tests: Passing](https://img.shields.io/badge/Tests-76%2F76%20Passing-brightgreen.svg)]()
 [![CALL-E SDK](https://img.shields.io/badge/Telephony-CALL--E%20SDK-purple.svg)](https://calle.ai)
 
 > **Autonomous phone agent that dials suppliers to verify purchase order fulfillment by deadline, captures delay root causes, estimates financial risk, and outputs structured intelligence directly into procurement dashboards.**
@@ -220,7 +220,7 @@ python3 -m unittest discover -s tests
 
 Output:
 ```text
-Ran 54 tests in 0.541s
+Ran 76 tests in 0.533s
 
 OK
 ```
